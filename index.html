@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1329,12 +1328,7 @@ function loadTomorrow() {
   if (!saved) return;
   ['morning','midday','night'].forEach(s => {
     if (saved[s] && Array.isArray(saved[s])) {
-      stateTomorrow[s] = saved[s].map(i => ({
-        id: ++idCounter,
-        text: i.text,
-        done: false,
-        streak: i.streak || 0
-      }));
+      stateTomorrow[s] = saved[s].map(i => ({ id: ++idCounter, text: i.text, done: false, streak: i.streak || 0 }));
     }
   });
 }
@@ -1342,10 +1336,6 @@ function loadTomorrow() {
 function yesterdayKey() {
   const d = new Date();
   d.setDate(d.getDate() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-
-  const d = new Date(); d.setDate(d.getDate() - 1);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
