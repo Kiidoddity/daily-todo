@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily To-Do">
+<meta name="theme-color" content="#c8a96e">
+<title>Daily To-Do List</title>
+<script>
+  try { if (localStorage.getItem('todo-theme') === 'dark') document.documentElement.classList.add('dark-root'); } catch(e) {}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+input, button, select, textarea { font-size: 16px; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+html { background-color: #faf7f2; overflow: hidden; height: 100%; -webkit-text-size-adjust: 100%; }
+html.dark-root { background-color: #1e1b16; }
+:root {
+  --paper: #faf7f2;
+  --paper-dark: #f0ebe0;
+  --ink: #2c2416;
+  --ink-light: #7a6e5f;
+  --ink-faint: #c8bfaf;
+  --bg: #faf7f2;
+  --bg-a: rgba(232,168,56,0.06);
+  --bg-b: rgba(74,95,168,0.06);
+  --title: #2c2416;
+}
+body.dark {
+  --paper: #1e1b16;
+  --paper-dark: #171410;
+  --ink: #e8dfd0;
+  --ink-light: #a89880;
+  --ink-faint: #4a4035;
+  --bg: #1e1b16;
+  --bg-a: rgba(232,168,56,0.05);
+  --bg-b: rgba(74,95,168,0.07);
+  --title: #e8dfd0;
+}
+body {
+  font-family: 'Lora', 'Georgia', serif;
+  background-color: var(--bg);
+  height: 100%; overflow: hidden;
+  color: var(--ink);
+  transition: background-color .3s, color .3s;
+}
+
+/* PAGE SWIPE */
+.pages-container { display:flex; width:300%; height:100vh; transition:transform .4s cubic-bezier(.25,.46,.45,.94); }
+.page {
+  width:33.333%; height:100vh; overflow-y:auto; overflow-x:hidden; flex-shrink:0;
+  background-color: var(--bg);
+  background-image: radial-gradient(ellipse at 20% 20%, var(--bg-a) 0%, transparent 60%),
+                    radial-gradient(ellipse at 80% 80%, var(--bg-b) 0%, transparent 60%);
+  padding: 32px 20px 80px; -webkit-overflow-scrolling: touch;
+}
+.page-indicator { display:flex; justify-content:center; gap:8px; margin-bottom:20px; }
+.page-dot { width:6px; height:6px; border-radius:50%; background:var(--ink-faint); transition:background .2s,transform .2s; cursor:pointer; }
+.page-dot.active { background:var(--ink-light); transform:scale(1.3); }
+
+/* HEADER */
+.page-header { text-align:center; margin-bottom:36px; }
+.date-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px; }
+.date-line { font-size:.78rem; color:var(--ink-faint); letter-spacing:.08em; text-transform:uppercase; }
+.theme-toggle-small {
+  width:34px; height:20px; background:var(--paper-dark); border:1.5px solid var(--ink-faint);
+  border-radius:10px; cursor:pointer; padding:0; position:relative; flex-shrink:0;
+  transition:background .3s,border-color .3s; outline:none;
+}
+.theme-toggle-small:hover { border-color:var(--ink-light); }
+.theme-knob-small {
+  position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%;
+  background:var(--ink-light); transition:transform .25s cubic-bezier(.16,1,.3,1),background .3s;
+  display:flex; align-items:center; justify-content:center; font-size:8px; line-height:1;
+}
+body.dark .theme-knob-small { transform:translateX(14px); background:#c8a96e; }
+.page-header h1 { font-family:'Playfair Display','Iowan Old Style',Georgia,serif; font-size:clamp(1.8rem,5vw,3rem); font-weight:700; letter-spacing:-.5px; color:var(--title); line-height:1.1; }
+.page-label { font-style:italic; color:var(--ink-light); font-size:.85rem; margin-top:4px; }
+#page-tomorrow .page-header h1 { color:#4a5fa8; }
+.swipe-hint { text-align:center; font-size:.72rem; font-style:italic; color:var(--ink-faint); letter-spacing:.06em; margin-top:-24px; margin-bottom:20px; user-select:none; }
+.sections-wrapper { max-width:680px; margin:0 auto; display:flex; flex-direction:column; gap:32px; }
+
+/* SECTION CARDS */
+.section-card {
+  background: var(--paper); border-radius:4px;
+  box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 4px 20px rgba(0,0,0,.1), inset 0 0 0 1px rgba(180,160,130,.3);
+  overflow:hidden; position:relative;
+}
+.section-card::before { content:''; position:absolute; left:56px; top:0; bottom:0; width:1px; background:rgba(200,180,160,.3); pointer-events:none; }
+.section-card.drag-target { box-shadow:0 2px 0 rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.07),inset 0 0 0 1px rgba(0,0,0,.04); }
+.drop-zone { display:none; }
+.section-card.drag-target .drop-zone { display:none; }
+.section-header { display:flex; align-items:center; gap:10px; padding:16px 20px 14px; border-bottom:2px solid var(--paper-dark); }
+.section-title { font-family:'Playfair Display','Iowan Old Style',Georgia,serif; font-size:1.15rem; font-weight:600; letter-spacing:-.2px; }
+.section-count { font-size:.72rem; font-style:italic; color:var(--ink-faint); letter-spacing:.05em; white-space:nowrap; }
+.section-deadline-wrap { margin-left:auto; display:flex; align-items:center; gap:6px; flex-shrink:0; }
+.section-deadline-label { font-size:.7rem; font-style:italic; color:var(--ink-faint); white-space:nowrap; }
+.deadline-drum { position:relative; width:54px; height:26px; overflow:hidden; border:1px solid var(--ink-faint); border-radius:4px; background:var(--paper-dark); cursor:pointer; user-select:none; }
+.deadline-drum-inner { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.72rem; color:var(--ink); font-style:italic; pointer-events:none; }
+.deadline-drum::before,.deadline-drum::after { content:''; position:absolute; left:0; right:0; height:8px; z-index:2; pointer-events:none; }
+.deadline-drum::before { top:0; background:linear-gradient(to bottom,var(--paper-dark),transparent); }
+.deadline-drum::after  { bottom:0; background:linear-gradient(to top,var(--paper-dark),transparent); }
+.morning .section-header { border-bottom-color:rgba(232,168,56,.3); } .morning .section-title { color:#b07a10; }
+.midday  .section-header { border-bottom-color:rgba(224,92,58,.25); }  .midday  .section-title { color:#b83d1e; }
+.night   .section-header { border-bottom-color:rgba(74,95,168,.25); }  .night   .section-title { color:#4a5fa8; }
+
+/* TODO ITEMS */
+.todo-list { list-style:none; padding:0; }
+.todo-item { position:relative; overflow:hidden; border-bottom:1px solid var(--paper-dark); }
+.todo-item:last-child { border-bottom:none; }
+.swipe-delete-bg {
+  position:absolute; inset:0; background:#c0392b;
+  display:flex; align-items:center; justify-content:flex-end;
+  padding-right:20px; color:white; font-size:.78rem; font-style:italic; letter-spacing:.05em; pointer-events:none;
+}
+.swipe-delete-bg svg { width:16px; height:16px; stroke:white; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; fill:none; margin-left:6px; }
+.todo-item-inner {
+  display:flex; align-items:center; gap:12px; padding:11px 20px;
+  background: var(--paper); position:relative; z-index:1; will-change:transform; cursor:grab;
+}
+.todo-item-inner.dragging-item { opacity:.45; cursor:grabbing; }
+@keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+.todo-item { animation:slideIn .28s cubic-bezier(.16,1,.3,1) both; }
+
+/* CHECK BTN */
+.check-btn { flex-shrink:0; width:28px; height:28px; border:none; background:transparent; cursor:pointer; padding:0; outline:none; border-radius:50%; overflow:visible; position:relative; display:flex; align-items:center; justify-content:center; }
+.check-btn canvas { display:block; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; }
+
+/* TEXT + BADGES */
+.todo-text { font-size:.95rem; line-height:1.5; flex:1; min-width:0; cursor:text; transition:color .2s; }
+.todo-text.strikethrough { color:var(--ink-faint); text-decoration:line-through; text-decoration-color:var(--ink-faint); }
+.task-time-badge { flex-shrink:0; font-size:.7rem; font-family:'Lora','Iowan Old Style','Georgia',serif; font-style:italic; color:var(--ink-light); background:var(--paper-dark); border:1px solid var(--ink-faint); border-radius:10px; padding:2px 7px; white-space:nowrap; cursor:pointer; user-select:none; transition:border-color .15s,color .15s; }
+.task-time-badge:hover { border-color:var(--ink-light); color:var(--ink); }
+.inline-time-btn { flex-shrink:0; font-size:.7rem; font-family:'Lora','Iowan Old Style','Georgia',serif; font-style:italic; color:var(--ink-faint); background:var(--paper-dark); border:1px dashed var(--ink-faint); border-radius:10px; padding:2px 7px; white-space:nowrap; cursor:pointer; user-select:none; transition:border-color .15s,color .15s; }
+.inline-time-btn:hover { border-color:var(--ink-light); color:var(--ink-light); }
+.inline-time-btn.has-time { border-style:solid; color:var(--ink-light); }
+.streak-badge { flex-shrink:0; font-size:.75rem; font-family:'Lora','Iowan Old Style','Georgia',serif; font-style:italic; color:#c07020; background:rgba(224,168,56,.12); border:1px solid rgba(224,168,56,.25); border-radius:20px; padding:2px 7px; white-space:nowrap; user-select:none; }
+body.dark .streak-badge { color:#e8a838; }
+.streak-badge.milestone { animation:streakPop .6s cubic-bezier(.16,1,.3,1) both; }
+@keyframes streakPop { 0%{transform:scale(1)} 30%{transform:scale(1.5) rotate(-8deg)} 55%{transform:scale(.9) rotate(4deg)} 75%{transform:scale(1.15) rotate(-2deg)} 100%{transform:scale(1) rotate(0)} }
+.edit-input { flex:1; min-width:0; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:16px; color:var(--ink); background:rgba(255,255,255,.75); border:1px solid var(--ink-faint); border-radius:3px; padding:2px 8px; outline:none; }
+.edit-input:focus { border-color:var(--ink-light); }
+body.dark .edit-input { background:rgba(255,255,255,.07); border-color:#4a4035; color:#e8dfd0; }
+.empty-msg { padding:16px 20px; font-style:italic; font-size:.875rem; color:var(--ink-faint); text-align:center; cursor:text; user-select:none; display:flex; align-items:center; justify-content:center; gap:6px; }
+.empty-msg::before { content:'+'; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; border:1.5px solid currentColor; font-size:.75rem; font-style:normal; flex-shrink:0; }
+.section-body {
+  background-color: var(--paper);
+  background-image:
+    /* Red margin line on the left */
+    linear-gradient(to right, transparent 52px, rgba(210,120,100,.25) 52px, rgba(210,120,100,.25) 53px, transparent 53px),
+    /* Ruled horizontal lines */
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 42px,
+      rgba(180,160,130,.35) 42px,
+      rgba(180,160,130,.35) 43px
+    );
+}
+body.dark .section-body {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(to right, transparent 52px, rgba(180,80,60,.2) 52px, rgba(180,80,60,.2) 53px, transparent 53px),
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 42px,
+      rgba(255,255,255,.07) 42px,
+      rgba(255,255,255,.07) 43px
+    );
+}
+
+/* ADD AREA */
+.add-area { background: var(--paper-dark); border-top:1px dashed var(--ink-faint); }
+.add-input-row { display:flex; align-items:center; gap:10px; padding:10px 20px 8px; }
+.plus-icon { width:26px; height:26px; flex-shrink:0; border-radius:50%; border:2px dashed var(--ink-faint); display:flex; align-items:center; justify-content:center; color:var(--ink-faint); font-size:1rem; user-select:none; }
+.add-area:focus-within .plus-icon { border-color:var(--ink-light); color:var(--ink-light); }
+.add-input { flex:1; background:transparent; border:none; outline:none; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:16px; color:var(--ink); font-style:italic; padding:4px 0; }
+.add-input::placeholder { color:var(--ink-faint); }
+.add-time-drum-wrap { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+.add-time-drum { position:relative; width:54px; height:26px; overflow:hidden; border:1px solid var(--ink-faint); border-radius:4px; background:var(--paper); cursor:pointer; user-select:none; }
+.add-time-drum-inner { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.72rem; color:var(--ink); font-style:italic; pointer-events:none; }
+.add-time-drum::before,.add-time-drum::after { content:''; position:absolute; left:0; right:0; height:8px; z-index:2; pointer-events:none; }
+.add-time-drum::before { top:0; background:linear-gradient(to bottom,var(--paper),transparent); }
+.add-time-drum::after  { bottom:0; background:linear-gradient(to top,var(--paper),transparent); }
+.add-time-active-indicator { width:8px; height:8px; border-radius:50%; background:#4a5fa8; opacity:0; transition:opacity .2s; flex-shrink:0; }
+.add-time-active-indicator.on { opacity:1; }
+.add-btn-row { display:flex; align-items:center; gap:8px; padding:0 20px 10px; flex-wrap:wrap; }
+.add-btn { color:var(--paper); border:none; border-radius:3px; padding:6px 13px; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.78rem; letter-spacing:.05em; cursor:pointer; flex-shrink:0; transition:opacity .15s,transform .1s; }
+.morning .add-btn{background:#b07a10} .midday .add-btn{background:#b83d1e} .night .add-btn{background:#4a5fa8}
+.add-btn:hover{opacity:.85;transform:translateY(-1px)} .add-btn:active{transform:translateY(0)}
+.repeat-btn,.clear-btn { border-radius:3px; padding:5px 10px; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.72rem; letter-spacing:.03em; cursor:pointer; flex-shrink:0; transition:opacity .15s,transform .1s,border-color .15s,color .15s; white-space:nowrap; background:transparent; }
+.repeat-btn { color:var(--ink-light); border:1.5px solid var(--ink-faint); }
+.repeat-btn:hover { border-color:var(--ink-light); color:var(--ink); transform:translateY(-1px); }
+.clear-btn { color:#a03020; border:1.5px solid rgba(160,48,32,.3); }
+.clear-btn:hover { border-color:#a03020; background:rgba(160,48,32,.06); transform:translateY(-1px); }
+
+/* DRUM POPOVER */
+.drum-popover { position:fixed; z-index:9000; background:var(--paper); border:1.5px solid var(--ink-faint); border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,.2); min-width:150px; display:none; flex-direction:column; align-items:stretch; height:260px; overflow:hidden; }
+.drum-popover.show { display:flex; }
+.drum-popover-scroll { overflow-y:scroll; flex:1; scroll-snap-type:y mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.drum-popover-scroll::-webkit-scrollbar { display:none; }
+.drum-popover-item { padding:10px 18px; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.82rem; font-style:italic; color:var(--ink-light); cursor:pointer; scroll-snap-align:start; text-align:center; transition:background .1s,color .1s; }
+.drum-popover-item:hover { background:var(--paper-dark); color:var(--ink); }
+.drum-popover-item.selected { color:var(--ink); font-weight:500; background:rgba(74,95,168,.09); }
+.drum-popover::before,.drum-popover::after { content:''; position:absolute; left:0; right:0; height:28px; z-index:2; pointer-events:none; }
+.drum-popover::before { top:0; background:linear-gradient(to bottom,var(--paper),transparent); border-radius:6px 6px 0 0; }
+.drum-popover::after  { bottom:0; background:linear-gradient(to top,var(--paper),transparent); border-radius:0 0 6px 6px; }
+
+/* DRAG GHOST */
+.drag-ghost { position:fixed; pointer-events:none; z-index:8000; opacity:.88; box-shadow:0 8px 28px rgba(0,0,0,.2); border-radius:4px; background:var(--paper); display:flex; align-items:center; gap:12px; padding:11px 20px; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.95rem; color:var(--ink); }
+
+/* CONFIRM */
+.confirm-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:300; pointer-events:none; opacity:0; transition:opacity .2s; }
+.confirm-overlay.show { opacity:1; pointer-events:auto; }
+.confirm-backdrop { position:absolute; inset:0; background:rgba(44,36,22,.35); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); }
+.confirm-card { position:relative; background:var(--paper); border-radius:5px; box-shadow:0 16px 48px rgba(0,0,0,.18),inset 0 0 0 1px rgba(0,0,0,.05); padding:28px 28px 22px; max-width:300px; width:88%; text-align:center; transform:translateY(12px) scale(.97); transition:transform .25s cubic-bezier(.16,1,.3,1),opacity .2s; opacity:0; }
+.confirm-overlay.show .confirm-card { transform:translateY(0) scale(1); opacity:1; }
+.confirm-title { font-family:'Playfair Display','Iowan Old Style',Georgia,serif; font-size:1.05rem; font-weight:600; color:var(--ink); margin-bottom:6px; }
+.confirm-sub { font-style:italic; font-size:.82rem; color:var(--ink-light); margin-bottom:20px; }
+.confirm-btns { display:flex; gap:10px; justify-content:center; }
+.confirm-yes { font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.82rem; padding:7px 20px; background:#a03020; color:white; border:none; border-radius:3px; cursor:pointer; transition:opacity .15s,transform .1s; }
+.confirm-yes:hover { opacity:.85; transform:translateY(-1px); }
+.confirm-no { font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.82rem; padding:7px 20px; background:transparent; color:var(--ink-light); border:1.5px solid var(--ink-faint); border-radius:3px; cursor:pointer; transition:border-color .15s,color .15s,transform .1s; }
+.confirm-no:hover { border-color:var(--ink-light); color:var(--ink); transform:translateY(-1px); }
+
+/* CELEBRATION */
+.celebration-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:200; pointer-events:none; opacity:0; transition:opacity .4s; }
+.celebration-overlay.show { opacity:1; pointer-events:auto; }
+.celebration-backdrop { position:absolute; inset:0; background:rgba(44,36,22,.45); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
+.celebration-card { position:relative; background:var(--paper); border-radius:6px; box-shadow:0 24px 80px rgba(0,0,0,.22),inset 0 0 0 1px rgba(0,0,0,.05); padding:44px 40px 36px; max-width:380px; width:90%; text-align:center; transform:translateY(24px) scale(.96); transition:transform .45s cubic-bezier(.16,1,.3,1),opacity .4s; opacity:0; }
+.celebration-overlay.show .celebration-card { transform:translateY(0) scale(1); opacity:1; }
+.celebration-card::before { content:''; position:absolute; inset:0; border-radius:6px; background-image:repeating-linear-gradient(to bottom,transparent,transparent 31px,rgba(200,185,165,.18) 31px,rgba(200,185,165,.18) 32px); pointer-events:none; }
+.celebration-emoji { font-size:2.8rem; display:block; margin-bottom:14px; animation:bounceIn .6s cubic-bezier(.16,1,.3,1) .3s both; }
+@keyframes bounceIn { from{transform:scale(.4) rotate(-10deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
+.celebration-title { font-family:'Playfair Display','Iowan Old Style',Georgia,serif; font-size:1.45rem; font-weight:700; color:var(--ink); line-height:1.3; margin-bottom:8px; position:relative; }
+.celebration-sub { font-style:italic; color:var(--ink-light); font-size:.9rem; position:relative; }
+.confetti-canvas { position:fixed; inset:0; pointer-events:none; z-index:203; opacity:0; transition:opacity .3s; }
+.confetti-canvas.show { opacity:1; }
+
+/* TOAST */
+.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(10px); background:var(--ink); color:var(--paper); font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.8rem; font-style:italic; padding:8px 18px; border-radius:4px; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:400; white-space:nowrap; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.milestone-toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.85); background:var(--paper); border:1.5px solid rgba(224,168,56,.4); box-shadow:0 12px 48px rgba(0,0,0,.18); border-radius:6px; padding:24px 28px 20px; text-align:center; z-index:250; pointer-events:none; opacity:0; max-width:280px; width:85%; transition:opacity .3s,transform .4s cubic-bezier(.16,1,.3,1); }
+.milestone-toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+.milestone-fire { font-size:2.4rem; display:block; margin-bottom:8px; animation:fireWiggle .5s ease-in-out infinite alternate; }
+@keyframes fireWiggle { from{transform:rotate(-10deg) scale(1)} to{transform:rotate(10deg) scale(1.12)} }
+.milestone-text { font-family:'Playfair Display','Iowan Old Style',Georgia,serif; font-size:1rem; font-weight:600; color:var(--ink); line-height:1.4; }
+.milestone-sub { font-style:italic; font-size:.8rem; color:var(--ink-light); margin-top:4px; }
+
+/* DARK FIXES */
+body.dark .section-card::before { background:rgba(255,255,255,.06); }
+body.dark .morning .section-header { border-bottom-color:rgba(232,168,56,.2); }
+body.dark .midday  .section-header { border-bottom-color:rgba(224,92,58,.15); }
+body.dark .night   .section-header { border-bottom-color:rgba(74,95,168,.2); }
+body.dark .celebration-card,.confirm-card { background:#1e1b16; }
+body.dark .celebration-title,.confirm-title { color:#e8dfd0; }
+body.dark .drum-popover { background:#1e1b16; }
+body.dark .drum-popover-item:hover { background:#171410; }
+body.dark .drum-popover-item.selected { background:rgba(74,95,168,.15); }
+body.dark .todo-item-inner,.drag-ghost { background:#1e1b16; }
+</style>
+</head>
+<body>
+
+<div class="pages-container" id="pages-container">
+
+<!-- YESTERDAY — fully editable -->
+<div class="page" id="page-yesterday">
+  <div class="page-indicator">
+    <div class="page-dot active" data-page="0"></div><div class="page-dot" data-page="1"></div><div class="page-dot" data-page="2"></div>
+  </div>
+  <header class="page-header">
+    <div class="date-row"><span class="date-line" id="date-yesterday"></span></div>
+    <h1>Yesterday</h1>
+  </header>
+  <p class="swipe-hint">swipe right for today →</p>
+  <div class="sections-wrapper">
+    <div class="section-card morning" id="card-yesterday-morning"><div class="drop-zone">Drop here</div>
+      <div class="section-header"><span class="section-title">Morning</span><span class="section-count" id="count-yesterday-morning"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-yesterday-morning"><div class="deadline-drum-inner" id="deadline-label-yesterday-morning">—</div></div></div></div>
+      <div class="section-body"><ul class="todo-list" id="list-yesterday-morning"></ul><p class="empty-msg" id="empty-yesterday-morning">Add a morning task</p></div>
+      <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-yesterday-morning" type="text" placeholder="Add a morning task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-yesterday-morning"><div class="add-time-drum-inner" id="addtime-label-yesterday-morning">time</div></div><div class="add-time-active-indicator" id="addtime-dot-yesterday-morning"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-yesterday-morning">Add</button><button class="clear-btn" id="clear-btn-yesterday-morning">Clear All</button></div></div>
+    </div>
+    <div class="section-card midday" id="card-yesterday-midday"><div class="drop-zone">Drop here</div>
+      <div class="section-header"><span class="section-title">Mid-Day</span><span class="section-count" id="count-yesterday-midday"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-yesterday-midday"><div class="deadline-drum-inner" id="deadline-label-yesterday-midday">—</div></div></div></div>
+      <div class="section-body"><ul class="todo-list" id="list-yesterday-midday"></ul><p class="empty-msg" id="empty-yesterday-midday">Add a mid-day task</p></div>
+      <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-yesterday-midday" type="text" placeholder="Add a mid-day task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-yesterday-midday"><div class="add-time-drum-inner" id="addtime-label-yesterday-midday">time</div></div><div class="add-time-active-indicator" id="addtime-dot-yesterday-midday"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-yesterday-midday">Add</button><button class="clear-btn" id="clear-btn-yesterday-midday">Clear All</button></div></div>
+    </div>
+    <div class="section-card night" id="card-yesterday-night"><div class="drop-zone">Drop here</div>
+      <div class="section-header"><span class="section-title">Night</span><span class="section-count" id="count-yesterday-night"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-yesterday-night"><div class="deadline-drum-inner" id="deadline-label-yesterday-night">—</div></div></div></div>
+      <div class="section-body"><ul class="todo-list" id="list-yesterday-night"></ul><p class="empty-msg" id="empty-yesterday-night">Add a night task</p></div>
+      <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-yesterday-night" type="text" placeholder="Add a night task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-yesterday-night"><div class="add-time-drum-inner" id="addtime-label-yesterday-night">time</div></div><div class="add-time-active-indicator" id="addtime-dot-yesterday-night"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-yesterday-night">Add</button><button class="clear-btn" id="clear-btn-yesterday-night">Clear All</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TODAY -->
+<div class="page" id="page-today">
+  <div class="page-indicator">
+    <div class="page-dot" data-page="0"></div><div class="page-dot active" data-page="1"></div><div class="page-dot" data-page="2"></div>
+  </div>
+  <header class="page-header">
+    <div class="date-row"><span class="date-line" id="date-today"></span><button class="theme-toggle-small" id="theme-toggle" aria-label="Toggle dark mode"><span class="theme-knob-small" id="theme-knob">☀️</span></button></div>
+    <h1>Daily To-Do</h1>
+  </header>
+  <p class="swipe-hint">← yesterday &nbsp;&nbsp; tomorrow →</p>
+  <div class="sections-wrapper">
+    <div class="section-card morning" id="card-today-morning"><div class="drop-zone">Drop here</div>
+      <div class="section-header"><span class="section-title">Morning</span><span class="section-count" id="count-today-morning"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-today-morning"><div class="deadline-drum-inner" id="deadline-label-today-morning">—</div></div></div></div>
+      <div class="section-body"><ul class="todo-list" id="list-today-morning"></ul><p class="empty-msg" id="empty-today-morning">Add your first morning task</p></div>
+      <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-today-morning" type="text" placeholder="Add a morning task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-today-morning"><div class="add-time-drum-inner" id="addtime-label-today-morning">time</div></div><div class="add-time-active-indicator" id="addtime-dot-today-morning"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-today-morning">Add</button><button class="repeat-btn" id="repeat-btn-today-morning">↺ Yesterday's</button><button class="clear-btn" id="clear-btn-today-morning">Clear All</button></div></div>
+    </div>
+    <div class="section-card midday" id="card-today-midday"><div class="drop-zone">Drop here</div>
+      <div class="section-header"><span class="section-title">Mid-Day</span><span class="section-count" id="count-today-midday"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-today-midday"><div class="deadline-drum-inner" id="deadline-label-today-midday">—</div></div></div></div>
+      <div class="section-body"><ul class="todo-list" id="list-today-midday"></ul><p class="empty-msg" id="empty-today-midday">Add your first mid-day task</p></div>
+      <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-today-midday" type="text" placeholder="Add a mid-day task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-today-midday"><div class="add-time-drum-inner" id="addtime-label-today-midday">time</div></div><div class="add-time-active-indicator" id="addtime-dot-today-midday"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-today-midday">Add</button><button class="repeat-btn" id="repeat-btn-today-midday">↺ Yesterday's</button><button class="clear-btn" id="clear-btn-today-midday">Clear All</button></div></div>
+    </div>
+    <div class="section-card night" id="card-today-night"><div class="drop-zone">Drop here</div>
+      <div class="section-header"><span class="section-title">Night</span><span class="section-count" id="count-today-night"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-today-night"><div class="deadline-drum-inner" id="deadline-label-today-night">—</div></div></div></div>
+      <div class="section-body"><ul class="todo-list" id="list-today-night"></ul><p class="empty-msg" id="empty-today-night">Add your first night task</p></div>
+      <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-today-night" type="text" placeholder="Add a night task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-today-night"><div class="add-time-drum-inner" id="addtime-label-today-night">time</div></div><div class="add-time-active-indicator" id="addtime-dot-today-night"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-today-night">Add</button><button class="repeat-btn" id="repeat-btn-today-night">↺ Yesterday's</button><button class="clear-btn" id="clear-btn-today-night">Clear All</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOMORROW -->
+<div class="page" id="page-tomorrow">
+  <div class="page-indicator">
+    <div class="page-dot" data-page="0"></div><div class="page-dot" data-page="1"></div><div class="page-dot active" data-page="2"></div>
+  </div>
+  <header class="page-header">
+    <div class="date-row"><span class="date-line" id="date-tomorrow"></span></div>
+    <h1>Tomorrow</h1><p class="page-label">Planning ahead</p>
+  </header>
+  <p class="swipe-hint">← swipe left for today</p>
+  <div class="sections-wrapper">
+    <div class="section-card morning" id="card-tomorrow-morning"><div class="drop-zone">Drop here</div>
+      <div class="section-header"><span class="section-title">Morning</span><span class="section-count" id="count-tomorrow-morning"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-tomorrow-morning"><div class="deadline-drum-inner" id="deadline-label-tomorrow-morning">—</div></div></div></div>
+      <div class="section-body"><ul class="todo-list" id="list-tomorrow-morning"></ul><p class="empty-msg" id="empty-tomorrow-morning">Plan your morning</p></div>
+      <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-tomorrow-morning" type="text" placeholder="Plan a morning task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-tomorrow-morning"><div class="add-time-drum-inner" id="addtime-label-tomorrow-morning">time</div></div><div class="add-time-active-indicator" id="addtime-dot-tomorrow-morning"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-tomorrow-morning">Add</button><button class="clear-btn" id="clear-btn-tomorrow-morning">Clear All</button></div></div>
+    </div>
+    <div class="section-card midday" id="card-tomorrow-midday"><div class="drop-zone">Drop here</div>
+      <div class="section-header"><span class="section-title">Mid-Day</span><span class="section-count" id="count-tomorrow-midday"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-tomorrow-midday"><div class="deadline-drum-inner" id="deadline-label-tomorrow-midday">—</div></div></div></div>
+      <div class="section-body"><ul class="todo-list" id="list-tomorrow-midday"></ul><p class="empty-msg" id="empty-tomorrow-midday">Plan your mid-day</p></div>
+      <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-tomorrow-midday" type="text" placeholder="Plan a mid-day task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-tomorrow-midday"><div class="add-time-drum-inner" id="addtime-label-tomorrow-midday">time</div></div><div class="add-time-active-indicator" id="addtime-dot-tomorrow-midday"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-tomorrow-midday">Add</button><button class="clear-btn" id="clear-btn-tomorrow-midday">Clear All</button></div></div>
+    </div>
+    <div class="section-card night" id="card-tomorrow-night"><div class="drop-zone">Drop here</div>
+      <div class="section-header"><span class="section-title">Night</span><span class="section-count" id="count-tomorrow-night"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-tomorrow-night"><div class="deadline-drum-inner" id="deadline-label-tomorrow-night">—</div></div></div></div>
+      <div class="section-body"><ul class="todo-list" id="list-tomorrow-night"></ul><p class="empty-msg" id="empty-tomorrow-night">Plan your night</p></div>
+      <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-tomorrow-night" type="text" placeholder="Plan a night task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-tomorrow-night"><div class="add-time-drum-inner" id="addtime-label-tomorrow-night">time</div></div><div class="add-time-active-indicator" id="addtime-dot-tomorrow-night"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-tomorrow-night">Add</button><button class="clear-btn" id="clear-btn-tomorrow-night">Clear All</button></div></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /pages-container -->
+
+<canvas class="confetti-canvas" id="confetti-canvas"></canvas>
+<div class="celebration-overlay" id="celebration-overlay">
+  <div class="celebration-backdrop" id="celebration-backdrop"></div>
+  <div class="celebration-card"><span class="celebration-emoji">🎉</span><h2 class="celebration-title">You're goated for knocking out all your tasks today!</h2><p class="celebration-sub">Great job! Every single one — done.</p></div>
+</div>
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-backdrop" id="confirm-backdrop"></div>
+  <div class="confirm-card"><p class="confirm-title">Clear this list?</p><p class="confirm-sub">This will remove all tasks. This can't be undone.</p><div class="confirm-btns"><button class="confirm-yes" id="confirm-yes-btn">Yes, clear it</button><button class="confirm-no" id="confirm-no-btn">Cancel</button></div></div>
+</div>
+
+<!-- Time conflict dialog -->
+<div class="confirm-overlay" id="time-conflict-overlay">
+  <div class="confirm-backdrop" id="time-conflict-backdrop"></div>
+  <div class="confirm-card">
+    <p class="confirm-title" id="tc-title">Won't be done in time</p>
+    <p class="confirm-sub" id="tc-sub"></p>
+    <div class="confirm-btns" id="tc-btns"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="milestone-toast" id="milestone-toast"><span class="milestone-fire">🔥</span><p class="milestone-text" id="milestone-text"></p><p class="milestone-sub" id="milestone-sub"></p></div>
+<div class="drum-popover" id="drum-popover"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════════ */
+const SECTIONS  = ['morning','midday','night'];
+const ALL_PAGES = ['yesterday','today','tomorrow'];
+const PAGE_OFFSETS = {yesterday:-1, today:0, tomorrow:1};
+
+const state = {yesterday:{morning:[],midday:[],night:[]},today:{morning:[],midday:[],night:[]},tomorrow:{morning:[],midday:[],night:[]}};
+const deadlines = {yesterday:{morning:null,midday:null,night:null},today:{morning:null,midday:null,night:null},tomorrow:{morning:null,midday:null,night:null}};
+const addTimeDraft = {yesterday:{morning:null,midday:null,night:null},today:{morning:null,midday:null,night:null},tomorrow:{morning:null,midday:null,night:null}};
+let idCounter=0;
+
+function generateTimes(){
+  const t=['—'];
+  for(let h=0;h<24;h++) for(let m=0;m<60;m+=15){const hh=h%12===0?12:h%12,mm=String(m).padStart(2,'0'),ap=h<12?'am':'pm';t.push(`${hh}:${mm}${ap}`);}
+  return t;
+}
+const TIME_OPTIONS=generateTimes();
+
+function dateKeyOffset(n=0){const d=new Date();d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function fmtDate(d){return d.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).toUpperCase();}
+const tD=new Date(),yD=new Date(),tmD=new Date();yD.setDate(yD.getDate()-1);tmD.setDate(tmD.getDate()+1);
+document.getElementById('date-today').textContent=fmtDate(tD);
+document.getElementById('date-yesterday').textContent=fmtDate(yD);
+document.getElementById('date-tomorrow').textContent=fmtDate(tmD);
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGE SWIPE
+   Key insight: items claim touchClaimedByItem to block page-level swipe.
+   Each .page has touch-action:pan-y in CSS for native vertical scroll.
+   Page swipe is handled here only when axis is confirmed horizontal.
+═══════════════════════════════════════════════════════════════ */
+let currentPage=1;
+const container=document.getElementById('pages-container');
+let touchClaimedByItem=false;
+let pgStartX=0,pgStartY=0,pgAxis=null;
+
+function goToPage(n,animate=true){
+  currentPage=Math.max(0,Math.min(2,n));
+  container.style.transition=animate?'transform .4s cubic-bezier(.25,.46,.45,.94)':'none';
+  container.style.transform=`translateX(${-currentPage*33.333}%)`;
+  document.querySelectorAll('.page-dot').forEach(d=>d.classList.toggle('active',parseInt(d.dataset.page)===currentPage));
+}
+goToPage(1,false);
+
+container.addEventListener('touchstart',e=>{
+  touchClaimedByItem=false; pgAxis=null;
+  pgStartX=e.touches[0].clientX; pgStartY=e.touches[0].clientY;
+},{passive:true});
+
+container.addEventListener('touchmove',e=>{
+  if(touchClaimedByItem)return;
+  const dx=e.touches[0].clientX-pgStartX, dy=e.touches[0].clientY-pgStartY;
+  if(!pgAxis){
+    if(Math.abs(dx)<5&&Math.abs(dy)<5)return;
+    pgAxis=Math.abs(dx)>Math.abs(dy)?'x':'y';
+  }
+  if(pgAxis==='y')return;
+  e.preventDefault();
+  const off=-currentPage*33.333+(dx/window.innerWidth)*33.333;
+  container.style.transition='none';
+  container.style.transform=`translateX(${off}%)`;
+},{passive:false});
+
+container.addEventListener('touchend',e=>{
+  if(touchClaimedByItem||pgAxis!=='x')return;
+  const dx=e.changedTouches[0].clientX-pgStartX;
+  goToPage(Math.abs(dx)>60?(dx<0?currentPage+1:currentPage-1):currentPage);
+});
+
+document.querySelectorAll('.page-dot').forEach(d=>d.addEventListener('click',()=>goToPage(parseInt(d.dataset.page))));
+
+/* ═══════════════════════════════════════════════════════════════
+   CANVAS ANIMATIONS
+═══════════════════════════════════════════════════════════════ */
+const S=56,CR=11;
+const animMap=new Map();
+function drawIdle(ctx){const c=S/2;ctx.clearRect(0,0,S,S);ctx.beginPath();ctx.arc(c,c,CR,0,Math.PI*2);ctx.strokeStyle=document.body.classList.contains('dark')?'#4a4035':'#c8bfaf';ctx.lineWidth=2.5;ctx.stroke();}
+function drawDone(ctx){const c=S/2;ctx.clearRect(0,0,S,S);ctx.beginPath();ctx.arc(c,c,CR,0,Math.PI*2);ctx.fillStyle='#3a9e6a';ctx.fill();ctx.beginPath();ctx.moveTo(c-5,c);ctx.lineTo(c-1,c+4);ctx.lineTo(c+5,c-4);ctx.strokeStyle='white';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();}
+const BC=['#3a9e6a','#52c48a','#e05c3a','#c0392b','#8e44ad','#a855f7','#2d7a52','#e74c3c','#9b59b6'];
+function eOut(t){return 1-Math.pow(1-t,3);}
+function eOutB(t){const c=1.70158,c3=c+1;return 1+c3*Math.pow(t-1,3)+c*Math.pow(t-1,2);}
+function cancelAnim(k){if(animMap.has(k)){cancelAnimationFrame(animMap.get(k));animMap.delete(k);}}
+function mkCanvas(k,done){const c=document.createElement('canvas');c.width=S;c.height=S;done?drawDone(c.getContext('2d')):drawIdle(c.getContext('2d'));return c;}
+function animateTo(k,canvas,_fd,toDone,dur,cb){
+  cancelAnim(k);const ctx=canvas.getContext('2d'),cx=S/2,cy=S/2,st=performance.now();
+  if(!toDone){
+    function uf(now){const t=Math.min((now-st)/dur,1);ctx.clearRect(0,0,S,S);const r=(S/2-2)*(1-t);if(r>0){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=`rgba(58,158,106,${1-t})`;ctx.fill();}ctx.globalAlpha=t;drawIdle(ctx);ctx.globalAlpha=1;if(t<1)animMap.set(k,requestAnimationFrame(uf));else{animMap.delete(k);drawIdle(ctx);if(cb)cb();}}
+    animMap.set(k,requestAnimationFrame(uf));return;
+  }
+  const parts=Array.from({length:10},(_,i)=>({angle:(i/10)*Math.PI*2-Math.PI/2,speed:6.5+Math.random()*3,r:2.8+Math.random()*1.6,color:BC[i%BC.length],shape:i%3===0?'circle':'rect'}));
+  const ring=Array.from({length:8},(_,i)=>({angle:(i/8)*Math.PI*2,color:BC[i%BC.length]}));
+  function fr(now){
+    const raw=Math.min((now-st)/dur,1);ctx.clearRect(0,0,S,S);
+    const rT=Math.min(raw/.35,1),cT=Math.min(raw/.45,1),pT=raw>.15?Math.min((raw-.15)/.85,1):0;
+    if(rT<1){const rr=(CR+10)*eOut(rT),ra=1-eOut(rT),rw=3*(1-rT);if(rw>0&&ra>0){ctx.beginPath();ctx.arc(cx,cy,rr,0,Math.PI*2);ctx.strokeStyle=`rgba(58,158,106,${ra*.7})`;ctx.lineWidth=rw;ctx.stroke();}}
+    if(pT>0){
+      parts.forEach((p,i)=>{const t=Math.min(Math.max((pT-i*.03),0)/.97,1);if(t<=0)return;const d=p.speed*(S*.38)*eOutB(t),px=cx+Math.cos(p.angle)*d,py=cy+Math.sin(p.angle)*d,al=t<.75?1:1-(t-.75)/.25,sz=p.r*(1-t*.3);ctx.save();ctx.globalAlpha=al;ctx.fillStyle=p.color;if(p.shape==='circle'){ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fill();}else{ctx.fillRect(px-sz,py-sz*.6,sz*2,sz*1.2);}ctx.restore();});
+      ring.forEach((p,i)=>{const t=Math.min(Math.max((pT-i*.02),0)/.98,1);if(t<=0)return;const d=(S*.42)*eOutB(t),px=cx+Math.cos(p.angle)*d,py=cy+Math.sin(p.angle)*d,al=t<.75?1:1-(t-.75)/.25;ctx.save();ctx.globalAlpha=al*.9;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(px,py,2.2,0,Math.PI*2);ctx.fill();ctx.restore();});
+    }
+    const ce=eOutB(cT);if(cT>0){ctx.save();ctx.translate(cx,cy);ctx.scale(ce,ce);ctx.translate(-cx,-cy);ctx.beginPath();ctx.arc(cx,cy,CR,0,Math.PI*2);ctx.fillStyle='#3a9e6a';ctx.fill();if(cT>.5){const ca=(cT-.5)/.5;ctx.beginPath();ctx.moveTo(cx-5,cy);ctx.lineTo(cx-1,cy+4);ctx.lineTo(cx+5,cy-4);ctx.strokeStyle=`rgba(255,255,255,${ca})`;ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();}ctx.restore();}
+    if(raw<1)animMap.set(k,requestAnimationFrame(fr));else{animMap.delete(k);drawDone(ctx);if(cb)cb();}
+  }
+  animMap.set(k,requestAnimationFrame(fr));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DRUM POPOVER — tap to open a scrollable time picker list
+═══════════════════════════════════════════════════════════════ */
+let activeDrumAnchor=null;
+let activeDrumCallback=null;
+
+function showDrumPopover(anchor, current, options, onSelect){
+  const pop=document.getElementById('drum-popover');
+
+  // Toggle — if same anchor clicked again, close
+  if(pop.classList.contains('show') && activeDrumAnchor===anchor){
+    closeDrumPopover();
+    return;
+  }
+
+  // Always rebuild fresh
+  pop.innerHTML='';
+
+  // ── Type-in row (sibling of scroll, not inside it) ──────────
+  const typeRow=document.createElement('div');
+  typeRow.style.cssText='display:flex;align-items:center;gap:6px;padding:8px 10px 6px;border-bottom:1px solid var(--ink-faint);flex-shrink:0;';
+  const typeInp=document.createElement('input');
+  typeInp.type='text';
+  typeInp.placeholder='type time…';
+  typeInp.style.cssText='flex:1;min-width:0;font-family:"Lora","Iowan Old Style","Georgia",serif;font-size:16px;font-style:italic;color:var(--ink);background:transparent;border:none;outline:none;';
+  const typeBtn=document.createElement('button');
+  typeBtn.textContent='Set';
+  typeBtn.style.cssText='font-family:"Lora","Iowan Old Style","Georgia",serif;font-size:.72rem;padding:3px 9px;background:var(--ink-light);color:var(--paper);border:none;border-radius:3px;cursor:pointer;flex-shrink:0;white-space:nowrap;';
+  function commitType(){const v=typeInp.value.trim();if(v){onSelect(v);closeDrumPopover();}}
+  typeBtn.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();commitType();});
+  typeInp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitType();}if(e.key==='Escape')closeDrumPopover();});
+  typeRow.appendChild(typeInp);typeRow.appendChild(typeBtn);
+  pop.appendChild(typeRow);
+
+  // ── Scrollable time list ────────────────────────────────────
+  const scroll=document.createElement('div');
+  scroll.style.cssText='overflow-y:scroll;flex:1;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior:contain;';
+
+  // Tap detection: track touchstart position; on touchend, only select if finger barely moved
+  let _tapStartY=0, _tapStartX=0;
+  scroll.addEventListener('touchstart',e=>{
+    _tapStartY=e.touches[0].clientY;
+    _tapStartX=e.touches[0].clientX;
+  },{passive:true});
+
+  let selEl=null;
+  options.forEach(opt=>{
+    const div=document.createElement('div');
+    div.className='drum-popover-item'+(opt===(current||'—')?' selected':'');
+    div.textContent=opt;
+    // Mouse click (desktop)
+    div.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();onSelect(opt==='—'?null:opt);closeDrumPopover();});
+    // Touch: only fire select if it was a tap (not a scroll)
+    div.addEventListener('touchend',e=>{
+      const dy=Math.abs(e.changedTouches[0].clientY-_tapStartY);
+      const dx=Math.abs(e.changedTouches[0].clientX-_tapStartX);
+      if(dy<8&&dx<8){e.preventDefault();onSelect(opt==='—'?null:opt);closeDrumPopover();}
+    },{passive:false});
+    if(opt===(current||'—'))selEl=div;
+    scroll.appendChild(div);
+  });
+  pop.appendChild(scroll);
+
+  // ── Position: always inside viewport ───────────────────────
+  // Temporarily show off-screen to measure height
+  pop.style.visibility='hidden';
+  pop.style.top='0px';
+  pop.style.left='0px';
+  pop.classList.add('show');
+
+  const popW=pop.offsetWidth||160;
+  const popH=pop.offsetHeight||260;
+  const r=anchor.getBoundingClientRect();
+  const vw=window.innerWidth, vh=window.innerHeight;
+  const margin=8;
+
+  // Prefer below anchor, else above
+  let top=r.bottom+4;
+  if(top+popH>vh-margin) top=r.top-popH-4;
+  if(top<margin) top=margin;
+
+  // Prefer left-aligned to anchor, clamp to viewport
+  let left=r.left;
+  if(left+popW>vw-margin) left=vw-popW-margin;
+  if(left<margin) left=margin;
+
+  pop.style.top=`${top}px`;
+  pop.style.left=`${left}px`;
+  pop.style.visibility='';
+
+  // Insert a full-screen invisible backdrop behind the popover.
+  // Any tap outside the popover hits the backdrop and closes it.
+  // Scrolling inside the popover never touches the backdrop.
+  const bd=document.createElement('div');
+  bd.id='drum-backdrop';
+  bd.style.cssText='position:fixed;inset:0;z-index:8999;';
+  bd.addEventListener('touchend',e=>{e.preventDefault();closeDrumPopover();},{passive:false});
+  bd.addEventListener('click',()=>closeDrumPopover());
+  document.body.insertBefore(bd,pop);
+
+  activeDrumAnchor=anchor;
+  activeDrumCallback=onSelect;
+
+  // Scroll list to selected item, focus type input
+  requestAnimationFrame(()=>{
+    if(selEl) selEl.scrollIntoView({block:'nearest'});
+    typeInp.focus();
+  });
+}
+function closeDrumPopover(){
+  const pop=document.getElementById('drum-popover');
+  const bd=document.getElementById('drum-backdrop');
+  pop.classList.remove('show');
+  pop.innerHTML='';
+  if(bd)bd.remove();
+  activeDrumAnchor=null;
+  activeDrumCallback=null;
+}
+
+// Mouse outside-click (desktop only — mobile uses backdrop)
+document.addEventListener('click',e=>{
+  const pop=document.getElementById('drum-popover');
+  if(!pop.classList.contains('show'))return;
+  if(pop.contains(e.target))return;
+  if(activeDrumAnchor&&activeDrumAnchor.contains(e.target))return;
+  closeDrumPopover();
+});
+
+function setupDeadlineDrum(page,section){
+  const drum=document.getElementById(`deadline-${page}-${section}`);
+  if(!drum)return;
+  drum.addEventListener('click',e=>{e.stopPropagation();showDrumPopover(drum,deadlines[page][section],TIME_OPTIONS,val=>{deadlines[page][section]=val;const l=document.getElementById(`deadline-label-${page}-${section}`);if(l)l.textContent=val||'—';saveState(page);});});
+}
+function setupAddTimeDrum(page,section){
+  const drum=document.getElementById(`addtime-${page}-${section}`);
+  if(!drum)return;
+  drum.addEventListener('click',e=>{
+    e.stopPropagation();
+    showDrumPopover(drum,addTimeDraft[page][section],TIME_OPTIONS,val=>{
+      addTimeDraft[page][section]=val;
+      const l=document.getElementById(`addtime-label-${page}-${section}`);
+      const dot=document.getElementById(`addtime-dot-${page}-${section}`);
+      if(l)l.textContent=val||'time';
+      if(dot)dot.classList.toggle('on',!!val);
+    });
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════════════════ */
+function updateCount(page,section){
+  const items=state[page][section],done=items.filter(i=>i.done).length;
+  const el=document.getElementById(`count-${page}-${section}`);
+  if(el)el.textContent=items.length?`${done} / ${items.length} done`:'';
+}
+function render(page,section){
+  const lEl=document.getElementById(`list-${page}-${section}`);
+  const eEl=document.getElementById(`empty-${page}-${section}`);
+  if(!lEl)return;
+  const items=state[page][section];
+  lEl.innerHTML='';
+  if(eEl)eEl.style.display=items.length?'none':'';
+  items.forEach(item=>{
+    const key=`${page}-${section}-${item.id}`;
+    const li=document.createElement('li');
+    li.className='todo-item';li.dataset.id=item.id;li.dataset.page=page;li.dataset.section=section;
+
+    const bg=document.createElement('div');
+    bg.className='swipe-delete-bg';
+    bg.innerHTML='Delete <svg viewBox="0 0 14 14"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>';
+
+    const inner=document.createElement('div');inner.className='todo-item-inner';
+
+    const btn=document.createElement('button');btn.className='check-btn';btn.appendChild(mkCanvas(key,item.done));
+    btn.addEventListener('click',e=>{e.stopPropagation();toggleDone(page,section,item.id,li);});
+
+    const txt=document.createElement('span');txt.className='todo-text'+(item.done?' strikethrough':'');txt.textContent=item.text;
+    txt.addEventListener('click',e=>{e.stopPropagation();startEdit(page,section,item.id,li);});
+
+    inner.appendChild(btn);inner.appendChild(txt);
+
+    if(item.time){
+      const tb=document.createElement('span');tb.className='task-time-badge';tb.textContent=item.time;
+      tb.addEventListener('click',e=>{
+        e.stopPropagation();
+        showDrumPopover(tb,item.time,TIME_OPTIONS,val=>{
+          item.time=val;
+          // Check conflict after time change
+          if(val && deadlines[page][section] && hasTimeConflict(val, deadlines[page][section])){
+            const fitting=findFittingSections(page,section,val);
+            showTimeConflict(page,section,item.text,val,
+              ()=>{render(page,section);saveState(page);},
+              (s)=>{
+                state[page][section]=state[page][section].filter(i=>i.id!==item.id);
+                item.done=false;
+                state[page][s].push(item);
+                render(page,section);render(page,s);saveState(page);
+              }
+            );
+          } else {
+            render(page,section);saveState(page);
+          }
+        });
+      });
+      inner.appendChild(tb);
+    }
+    if(item.streak&&item.streak>=2){const b=document.createElement('span');b.className='streak-badge'+(item.streak%7===0?' milestone':'');b.textContent=`${item.streak}🔥`;inner.appendChild(b);}
+
+    li.appendChild(bg);li.appendChild(inner);
+    attachItemHandlers(li,inner,bg,page,section,item.id);
+    lEl.appendChild(li);
+  });
+  updateCount(page,section);
+  const dl=document.getElementById(`deadline-label-${page}-${section}`);if(dl)dl.textContent=deadlines[page][section]||'—';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   UNIFIED TOUCH HANDLER — one touch, one resolved mode per item.
+
+   Mode is decided after HOLD_MS ms with no significant movement
+   (→ DRAG) OR after movement beyond AXIS_THRESHOLD px:
+     • Mostly left/right  → SWIPE (delete reveal)
+     • Mostly up/down     → SCROLL (pass-through, do nothing)
+     • HOLD fired first   → DRAG  (even if finger drifts after)
+
+   Once mode is resolved, the other modes are fully locked out
+   for that touch. This prevents swipe and drag from conflicting.
+
+   Drag is triggered by press-and-hold on any part of the item
+   except the check button and time badge.
+═══════════════════════════════════════════════════════════════ */
+const HOLD_MS      = 380;   // ms hold to enter drag mode
+const AXIS_PX      = 6;     // px movement to resolve axis
+const SWIPE_THRESH = 90;    // px swipe-left to confirm delete
+
+let dragActive=null;
+
+function attachItemHandlers(li,inner,bg,page,section,id){
+  let sx=0,sy=0,tid=null;
+  let mode=null;        // null | 'drag' | 'swipe' | 'scroll'
+  let holdTimer=null;
+  let swipeDx=0;
+
+  function clearHold(){clearTimeout(holdTimer);holdTimer=null;}
+
+  function resetState(){
+    clearHold();
+    mode=null; swipeDx=0; tid=null;
+    inner.style.transition='';
+  }
+
+  function snapBack(){
+    inner.style.transition='transform .22s ease';
+    inner.style.transform='';
+    bg.style.opacity='0';
+    setTimeout(()=>{inner.style.transition='';},230);
+  }
+
+  // ── touch start ──────────────────────────────────────────────
+  li.addEventListener('touchstart',e=>{
+    // Check/time badge handle their own events
+    if(e.target.closest('.check-btn')||e.target.closest('.task-time-badge'))return;
+    // Only care about first touch
+    if(tid!==null)return;
+    const t=e.touches[0];
+    sx=t.clientX; sy=t.clientY; tid=t.identifier; mode=null; swipeDx=0;
+    inner.style.transition='';
+
+    // Start hold timer — fires → drag mode
+    holdTimer=setTimeout(()=>{
+      if(mode!==null)return; // already resolved to swipe/scroll
+      mode='drag';
+      touchClaimedByItem=true;
+      startDrag(li,inner,page,section,id,sx,sy);
+    },HOLD_MS);
+  },{passive:true});
+
+  // ── touch move ───────────────────────────────────────────────
+  li.addEventListener('touchmove',e=>{
+    const t=[...e.changedTouches].find(t=>t.identifier===tid);
+    if(!t)return;
+    const cx=t.clientX-sx, cy=t.clientY-sy;
+    const adx=Math.abs(cx), ady=Math.abs(cy);
+
+    if(mode==='drag'){
+      e.preventDefault();
+      moveDrag(t.clientX,t.clientY);
+      return;
+    }
+
+    if(mode==='swipe'){
+      e.preventDefault();
+      swipeDx=Math.min(0,cx);
+      inner.style.transform=`translateX(${Math.max(swipeDx,-180)}px)`;
+      bg.style.opacity=String(Math.min(adx/SWIPE_THRESH,1));
+      return;
+    }
+
+    if(mode==='scroll')return;
+
+    // Not yet resolved — wait for enough movement
+    if(adx<AXIS_PX&&ady<AXIS_PX)return;
+
+    // Resolve mode from movement direction
+    if(cx<0&&adx>ady*1.1){
+      // Left-dominant → SWIPE
+      clearHold();
+      mode='swipe';
+      touchClaimedByItem=true;
+      e.preventDefault();
+    } else if(ady>adx*1.1){
+      // Vertical-dominant → SCROLL
+      clearHold();
+      mode='scroll';
+    } else {
+      // Ambiguous diagonal — treat as scroll to be safe
+      clearHold();
+      mode='scroll';
+    }
+  },{passive:false});
+
+  // ── touch end ────────────────────────────────────────────────
+  li.addEventListener('touchend',e=>{
+    const t=[...e.changedTouches].find(t=>t.identifier===tid);
+    if(!t){resetState();return;}
+
+    if(mode==='drag'){
+      endDrag();
+    } else if(mode==='swipe'){
+      if(swipeDx<=-SWIPE_THRESH){
+        inner.style.transition='transform .18s ease';
+        inner.style.transform='translateX(-110%)';
+        bg.style.opacity='1';
+        setTimeout(()=>deleteTask(page,section,id),180);
+      } else {
+        snapBack();
+      }
+    }
+    resetState();
+    touchClaimedByItem=false;
+  });
+
+  li.addEventListener('touchcancel',()=>{
+    if(mode==='drag')endDrag();
+    else if(mode==='swipe')snapBack();
+    resetState();
+    touchClaimedByItem=false;
+  });
+
+  // ── Mouse support (drag only, no swipe on desktop) ──────────
+  inner.addEventListener('mousedown',e=>{
+    if(e.target.closest('.check-btn')||e.target.closest('.task-time-badge'))return;
+    const msx=e.clientX,msy=e.clientY;
+    let mMode=null,mHold=null;
+
+    mHold=setTimeout(()=>{
+      mMode='drag';
+      startDrag(li,inner,page,section,id,msx,msy);
+    },HOLD_MS);
+
+    function mm(e2){
+      if(mMode==='drag'){moveDrag(e2.clientX,e2.clientY);return;}
+      // If moved a lot before hold, cancel hold → scroll
+      if(Math.hypot(e2.clientX-msx,e2.clientY-msy)>10){clearTimeout(mHold);mMode='scroll';}
+    }
+    function mu(){
+      clearTimeout(mHold);
+      if(mMode==='drag')endDrag();
+      mMode=null;
+      document.removeEventListener('mousemove',mm);
+      document.removeEventListener('mouseup',mu);
+    }
+    document.addEventListener('mousemove',mm);
+    document.addEventListener('mouseup',mu);
+  });
+}
+
+function startDrag(li,inner,page,section,id,x,y){
+  const r=li.getBoundingClientRect();
+  const ghost=document.createElement('div');ghost.className='drag-ghost';
+  ghost.style.width=`${r.width}px`;ghost.style.top=`${r.top}px`;ghost.style.left=`${r.left}px`;
+  const item=state[page][section].find(i=>i.id===id);
+  if(item){const c=mkCanvas(`gh-${id}`,item.done);ghost.appendChild(c);const s=document.createElement('span');s.textContent=item.text;ghost.appendChild(s);}
+  document.body.appendChild(ghost);
+  inner.classList.add('dragging-item');
+  dragActive={page,section,id,ghost,li,inner,offsetY:y-r.top};
+  try{if(navigator.vibrate)navigator.vibrate(22);}catch(e){}
+}
+function moveDrag(x,y){
+  if(!dragActive)return;
+  dragActive.ghost.style.top=`${y-dragActive.offsetY}px`;
+  document.querySelectorAll('.section-card').forEach(c=>{const r=c.getBoundingClientRect();c.classList.toggle('drag-target',x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom);});
+}
+function endDrag(){
+  if(!dragActive)return;
+  const{page,section,id,ghost,inner}=dragActive;dragActive=null;
+  ghost.remove();inner.classList.remove('dragging-item');touchClaimedByItem=false;
+  const target=document.querySelector('.section-card.drag-target');
+  document.querySelectorAll('.section-card').forEach(c=>c.classList.remove('drag-target'));
+  if(!target||!target.id)return;
+  const parts=target.id.split('-'),tp=parts[1],ts=parts[2];
+  if(tp===page&&ts===section)reorderSection(page,section,id,ghost.getBoundingClientRect().top);
+  else moveTask(page,section,id,tp,ts);
+}
+function moveTask(fp,fs,id,tp,ts){
+  const fl=state[fp][fs],idx=fl.findIndex(i=>i.id===id);if(idx===-1)return;
+  const[task]=fl.splice(idx,1);task.done=false;state[tp][ts].push(task);
+  render(fp,fs);render(tp,ts);saveState(fp);if(tp!==fp)saveState(tp);
+  showToast(`Moved to ${tp==='today'?"today's":tp==="tomorrow"?"tomorrow's":"yesterday's"} ${ts}`);
+}
+function reorderSection(page,section,id,dropY){
+  const lEl=document.getElementById(`list-${page}-${section}`),items=state[page][section];
+  const idx=items.findIndex(i=>i.id===id);if(idx===-1)return;
+  let ni=items.length-1;
+  const lis=[...lEl.querySelectorAll('.todo-item')];
+  for(let i=0;i<lis.length;i++){const r=lis[i].getBoundingClientRect();if(dropY<r.top+r.height/2){ni=i;break;}}
+  const[t]=items.splice(idx,1);items.splice(ni,0,t);render(page,section);saveState(page);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOGGLE DONE
+═══════════════════════════════════════════════════════════════ */
+function toggleDone(page,section,id,li){
+  const item=state[page][section].find(i=>i.id===id);if(!item)return;
+  const key=`${page}-${section}-${id}`,canvas=li.querySelector('.check-btn canvas'),txt=li.querySelector('.todo-text');
+  item.done=!item.done;txt.classList.toggle('strikethrough',item.done);updateCount(page,section);saveState(page);
+  if(item.done&&page==='today'){checkAllDone();if(item.streak&&item.streak>=2&&item.streak%7===0)setTimeout(()=>showMilestone(item.text,item.streak),700);}
+  item.done?animateTo(key,canvas,false,true,950,null):animateTo(key,canvas,true,false,500,null);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INLINE EDIT — shows "add/edit time" button inline
+═══════════════════════════════════════════════════════════════ */
+function startEdit(page,section,id,li){
+  if(li.querySelector('.edit-input'))return;
+  const item=state[page][section].find(i=>i.id===id);if(!item)return;
+  const inner=li.querySelector('.todo-item-inner');
+  // Remove text, time badge, streak from inner
+  ['todo-text','task-time-badge','streak-badge'].forEach(cls=>{const el=inner.querySelector('.'+cls);if(el)inner.removeChild(el);});
+
+  const input=document.createElement('input');input.className='edit-input';input.type='text';input.value=item.text;inner.appendChild(input);
+
+  // Inline time button
+  const timeBtn=document.createElement('span');
+  timeBtn.className='inline-time-btn'+(item.time?' has-time':'');
+  timeBtn.textContent=item.time||'+ time';
+  timeBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    showDrumPopover(timeBtn,item.time,TIME_OPTIONS,val=>{
+      item.time=val;
+      timeBtn.textContent=val||'+ time';
+      timeBtn.classList.toggle('has-time',!!val);
+      // Check conflict
+      if(val && deadlines[page][section] && hasTimeConflict(val, deadlines[page][section])){
+        showTimeConflict(page,section,item.text,val,
+          ()=>{saveState(page);},
+          (s)=>{
+            state[page][section]=state[page][section].filter(i=>i.id!==item.id);
+            item.done=false;
+            state[page][s].push(item);
+            render(page,section);render(page,s);saveState(page);
+          }
+        );
+      }
+    });
+  });
+  inner.appendChild(timeBtn);
+
+  input.focus();input.select();
+
+  function commit(){const v=input.value.trim();if(v)item.text=v;render(page,section);saveState(page);}
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commit();}if(e.key==='Escape')render(page,section);});
+  input.addEventListener('blur',()=>setTimeout(()=>{if(!document.querySelector('.drum-popover.show'))commit();},160));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADD / DELETE
+═══════════════════════════════════════════════════════════════ */
+function addTask(page,section){
+  const inp=document.getElementById(`input-${page}-${section}`);
+  const text=inp.value.trim();if(!text)return;
+  const time=addTimeDraft[page][section]||null;
+
+  function doAdd(targetSection){
+    state[page][targetSection].push({id:++idCounter,text,done:false,streak:0,time});
+    // Reset time draft
+    addTimeDraft[page][section]=null;
+    const lbl=document.getElementById(`addtime-label-${page}-${section}`);
+    const dot=document.getElementById(`addtime-dot-${page}-${section}`);
+    if(lbl)lbl.textContent='time';
+    if(dot)dot.classList.remove('on');
+    inp.value='';
+    render(page,targetSection);
+    if(targetSection!==section)render(page,section);
+    saveState(page);
+    inp.focus();
+  }
+
+  // Check conflict only if both task time and section deadline are set
+  if(time && deadlines[page][section] && hasTimeConflict(time, deadlines[page][section])){
+    showTimeConflict(page, section, text, time,
+      ()=>doAdd(section),          // keep here
+      (s)=>doAdd(s)                // move to fitting section
+    );
+    return;
+  }
+
+  doAdd(section);
+}
+function deleteTask(page,section,id){cancelAnim(`${page}-${section}-${id}`);state[page][section]=state[page][section].filter(i=>i.id!==id);render(page,section);saveState(page);}
+
+/* ═══════════════════════════════════════════════════════════════
+   TIME CONFLICT CHECKING
+   Parse a time string like "9:30am" → minutes since midnight.
+   If a task's time is later than the section deadline, warn the
+   user and offer to move it to a section whose deadline fits.
+═══════════════════════════════════════════════════════════════ */
+function parseTimeToMinutes(t){
+  if(!t||t==='—')return null;
+  // Handle typed times like "9:30am", "14:00", "2pm", "9:30 AM"
+  const clean=t.trim().toLowerCase().replace(/\s/g,'');
+  const m12=/^(\d{1,2}):(\d{2})(am|pm)$/.exec(clean);
+  if(m12){
+    let h=parseInt(m12[1]),mn=parseInt(m12[2]),ap=m12[3];
+    if(ap==='pm'&&h!==12)h+=12;
+    if(ap==='am'&&h===12)h=0;
+    return h*60+mn;
+  }
+  const m12h=/^(\d{1,2})(am|pm)$/.exec(clean);
+  if(m12h){
+    let h=parseInt(m12h[1]),ap=m12h[2];
+    if(ap==='pm'&&h!==12)h+=12;
+    if(ap==='am'&&h===12)h=0;
+    return h*60;
+  }
+  const m24=/^(\d{1,2}):(\d{2})$/.exec(clean);
+  if(m24)return parseInt(m24[1])*60+parseInt(m24[2]);
+  return null;
+}
+
+const SECTION_ORDER=['morning','midday','night'];
+const SECTION_LABELS={morning:'Morning',midday:'Mid-Day',night:'Night'};
+
+// Check if taskTime (string) exceeds sectionDeadline (string).
+// Returns true if there's a conflict (task later than deadline).
+function hasTimeConflict(taskTime, sectionDeadline){
+  const t=parseTimeToMinutes(taskTime);
+  const d=parseTimeToMinutes(sectionDeadline);
+  if(t===null||d===null)return false;
+  return t>d;
+}
+
+// Find sections on the same page whose deadline accommodates taskTime.
+function findFittingSections(page, excludeSection, taskTime){
+  const t=parseTimeToMinutes(taskTime);
+  if(t===null)return[];
+  return SECTION_ORDER.filter(s=>{
+    if(s===excludeSection)return false;
+    const d=parseTimeToMinutes(deadlines[page][s]);
+    if(d===null)return false; // no deadline set — skip
+    return t<=d;
+  });
+}
+
+function showTimeConflict(page, section, taskText, taskTime, onKeep, onMove){
+  const overlay=document.getElementById('time-conflict-overlay');
+  const sub=document.getElementById('tc-sub');
+  const btns=document.getElementById('tc-btns');
+
+  const dlLabel=deadlines[page][section];
+  const fitting=findFittingSections(page, section, taskTime);
+
+  sub.textContent=`"${taskText}" is set for ${taskTime}, but the ${SECTION_LABELS[section]} deadline is ${dlLabel}. It won't be done in time.`;
+
+  btns.innerHTML='';
+
+  // Move buttons for each fitting section
+  if(fitting.length>0){
+    fitting.forEach(s=>{
+      const btn=document.createElement('button');
+      btn.className='confirm-yes';
+      btn.style.fontSize='.76rem';
+      btn.textContent=`Move to ${SECTION_LABELS[s]}`;
+      btn.addEventListener('click',()=>{
+        closeTimeConflict();
+        onMove(s);
+      });
+      btns.appendChild(btn);
+    });
+  }
+
+  // Keep anyway button
+  const keepBtn=document.createElement('button');
+  keepBtn.className='confirm-no';
+  keepBtn.textContent='Keep here';
+  keepBtn.addEventListener('click',()=>{closeTimeConflict();onKeep();});
+  btns.appendChild(keepBtn);
+
+  overlay.classList.add('show');
+}
+
+function closeTimeConflict(){
+  document.getElementById('time-conflict-overlay').classList.remove('show');
+}
+
+document.getElementById('time-conflict-backdrop').addEventListener('click',closeTimeConflict);
+
+/* ═══════════════════════════════════════════════════════════════
+   PERSIST
+═══════════════════════════════════════════════════════════════ */
+function saveState(page){
+  const key='todo-'+dateKeyOffset(PAGE_OFFSETS[page]);
+  const snap={sections:{},deadlines:deadlines[page]||{}};
+  SECTIONS.forEach(s=>{snap.sections[s]=state[page][s].map(i=>({text:i.text,done:i.done,streak:i.streak||0,time:i.time||null}));});
+  try{localStorage.setItem(key,JSON.stringify(snap));}catch(e){}
+}
+function loadState(page){
+  const key='todo-'+dateKeyOffset(PAGE_OFFSETS[page]);
+  let s=null;try{s=JSON.parse(localStorage.getItem(key));}catch(e){}
+  if(!s)return;
+  SECTIONS.forEach(sec=>{const a=s.sections?s.sections[sec]:s[sec];if(a&&Array.isArray(a))state[page][sec]=a.map(i=>({id:++idCounter,text:i.text,done:!!i.done,streak:i.streak||0,time:i.time||null}));});
+  if(s.deadlines)SECTIONS.forEach(sec=>{if(deadlines[page])deadlines[page][sec]=s.deadlines[sec]||null;});
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   YESTERDAY REPEAT / CONFIRM CLEAR
+═══════════════════════════════════════════════════════════════ */
+function repeatYesterday(section){
+  const key='todo-'+dateKeyOffset(-1);let y=null;try{y=JSON.parse(localStorage.getItem(key));}catch(e){}
+  const arr=y?(y.sections?y.sections[section]:y[section]):null;
+  if(!arr||!arr.length){showToast('No tasks saved from yesterday for this list');return;}
+  const ex=new Set(state.today[section].map(i=>i.text.toLowerCase().trim()));let added=0;
+  arr.forEach(({text,done,streak,time})=>{if(!ex.has(text.toLowerCase().trim())){state.today[section].push({id:++idCounter,text,done:false,streak:done?(streak||0)+1:0,time:time||null});added++;}});
+  if(!added)showToast("Yesterday's tasks are already in this list");
+  else{render('today',section);saveState('today');showToast(`Added ${added} task${added>1?'s':''} from yesterday`);}
+}
+let pendingClear=null;
+function confirmClear(page,section){
+  if(!state[page][section].length){showToast('This list is already empty');return;}
+  pendingClear={page,section};document.getElementById('confirm-overlay').classList.add('show');
+  document.getElementById('confirm-yes-btn').onclick=()=>{clearSection(pendingClear.page,pendingClear.section);dismissConfirm();};
+}
+function dismissConfirm(){document.getElementById('confirm-overlay').classList.remove('show');pendingClear=null;}
+function clearSection(page,section){state[page][section].forEach(i=>cancelAnim(`${page}-${section}-${i.id}`));state[page][section]=[];render(page,section);saveState(page);showToast('List cleared');}
+
+/* ═══════════════════════════════════════════════════════════════
+   CELEBRATION / CONFETTI
+═══════════════════════════════════════════════════════════════ */
+let celebShown=false;
+function checkAllDone(){
+  const tot=SECTIONS.reduce((n,s)=>n+state.today[s].length,0),done=SECTIONS.reduce((n,s)=>n+state.today[s].filter(i=>i.done).length,0);
+  if(tot>0&&done===tot&&!celebShown){celebShown=true;setTimeout(()=>{launchConfetti();document.getElementById('celebration-overlay').classList.add('show');setTimeout(closeCelebration,5000);},600);}
+  if(done<tot)celebShown=false;
+}
+function closeCelebration(){document.getElementById('celebration-overlay').classList.remove('show');stopConfetti();}
+const CC=['#e8a838','#b07a10','#e05c3a','#b83d1e','#4a5fa8','#3a9e6a','#c8bfaf','#faf7f2','#d4a853','#e8d5b0'];
+let cRaf=null,pieces=[];
+function launchConfetti(){const c=document.getElementById('confetti-canvas');c.width=window.innerWidth;c.height=window.innerHeight;c.classList.add('show');pieces=[];for(let i=0;i<120;i++)pieces.push({x:Math.random()*c.width,y:-10-Math.random()*200,w:6+Math.random()*8,h:3+Math.random()*5,color:CC[Math.floor(Math.random()*CC.length)],rot:Math.random()*Math.PI*2,rotV:(Math.random()-.5)*.12,vx:(Math.random()-.5)*2.5,vy:1.8+Math.random()*3.2,opacity:.85+Math.random()*.15,shape:Math.random()>.4?'rect':'circle'});if(cRaf)cancelAnimationFrame(cRaf);animateConfetti();}
+function animateConfetti(){const c=document.getElementById('confetti-canvas'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);let alive=0;pieces.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.06;p.vx*=.995;p.rot+=p.rotV;p.vx+=(Math.random()-.5)*.08;if(p.y<c.height+20)alive++;ctx.save();ctx.globalAlpha=p.opacity*Math.max(0,1-(p.y/c.height));ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.color;if(p.shape==='circle'){ctx.beginPath();ctx.arc(0,0,p.w/2,0,Math.PI*2);ctx.fill();}else{ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);}ctx.restore();});if(alive>0)cRaf=requestAnimationFrame(animateConfetti);else stopConfetti();}
+function stopConfetti(){if(cRaf){cancelAnimationFrame(cRaf);cRaf=null;}const c=document.getElementById('confetti-canvas');c.classList.remove('show');c.getContext('2d').clearRect(0,0,c.width,c.height);}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOAST / MILESTONE / THEME / NEW-DAY / STREAKS
+═══════════════════════════════════════════════════════════════ */
+let toastT=null;
+function showToast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
+let milT=null;
+function showMilestone(text,streak){const el=document.getElementById('milestone-toast');document.getElementById('milestone-text').textContent=`${streak} days in a row!`;document.getElementById('milestone-sub').textContent=`"${text}" — keep it up! 🎉`;el.classList.add('show');clearTimeout(milT);milT=setTimeout(()=>el.classList.remove('show'),3500);}
+function toggleTheme(){const d=document.body.classList.toggle('dark');document.documentElement.classList.toggle('dark-root',d);document.getElementById('theme-knob').textContent=d?'🌙':'☀️';try{localStorage.setItem('todo-theme',d?'dark':'light');}catch(e){}}
+function loadTheme(){let s='light';try{s=localStorage.getItem('todo-theme')||'light';}catch(e){}if(s==='dark'){document.body.classList.add('dark');document.documentElement.classList.add('dark-root');document.getElementById('theme-knob').textContent='🌙';}}
+function checkNewDay(){const last=localStorage.getItem('todo-last-day'),today=dateKeyOffset(0);if(last&&last!==today)SECTIONS.forEach(s=>{state.today[s]=[];});localStorage.setItem('todo-last-day',today);}
+setInterval(()=>{const today=dateKeyOffset(0),last=localStorage.getItem('todo-last-day');if(last&&last!==today){SECTIONS.forEach(s=>{state.today[s]=[];render('today',s);});localStorage.setItem('todo-last-day',today);showToast('Good morning! Fresh lists for a new day ☀️');}},60000);
+function computeStreaks(){
+  const key='todo-'+dateKeyOffset(-1);let y=null;try{y=JSON.parse(localStorage.getItem(key));}catch(e){}if(!y)return;
+  const m=new Map();SECTIONS.forEach(s=>{const a=y.sections?y.sections[s]:y[s];(a||[]).forEach(i=>{const n=i.text.toLowerCase().trim();if(!m.has(n)||(i.streak||0)>m.get(n).streak)m.set(n,{streak:i.streak||0,done:!!i.done});});});
+  SECTIONS.forEach(s=>{state.today[s].forEach(item=>{const n=item.text.toLowerCase().trim();if(m.has(n)){const y2=m.get(n);item.streak=y2.done?y2.streak+1:0;}});});
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════════ */
+loadTheme();checkNewDay();
+ALL_PAGES.forEach(p=>loadState(p));
+computeStreaks();
+
+ALL_PAGES.forEach(page=>{
+  SECTIONS.forEach(section=>{
+    const inp=document.getElementById(`input-${page}-${section}`);
+    if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter')addTask(page,section);});
+    const aBtn=document.getElementById(`add-btn-${page}-${section}`);
+    if(aBtn)aBtn.addEventListener('click',()=>addTask(page,section));
+    const rBtn=document.getElementById(`repeat-btn-${page}-${section}`);
+    if(rBtn)rBtn.addEventListener('click',()=>repeatYesterday(section));
+    const cBtn=document.getElementById(`clear-btn-${page}-${section}`);
+    if(cBtn)cBtn.addEventListener('click',()=>confirmClear(page,section));
+    const eEl=document.getElementById(`empty-${page}-${section}`);
+    if(eEl)eEl.addEventListener('click',()=>{if(inp)inp.focus();});
+    setupDeadlineDrum(page,section);
+    setupAddTimeDrum(page,section);
+    render(page,section);
+  });
+});
+
+document.getElementById('theme-toggle').addEventListener('click',toggleTheme);
+document.getElementById('celebration-backdrop').addEventListener('click',closeCelebration);
+document.getElementById('confirm-backdrop').addEventListener('click',dismissConfirm);
+document.getElementById('confirm-no-btn').addEventListener('click',dismissConfirm);
+</script>
+</body>
+</html>
