@@ -1,6 +1,6 @@
 // Cache version — update this string whenever you push new files.
 // Using a timestamp means it auto-increments on every SW deployment.
-const CACHE_NAME = ‘daily-todo-’ + ‘2026-04-18-v3’;
+const CACHE_NAME = ‘daily-todo-’ + ‘2026-04-18-v4’;
 
 const STATIC_ASSETS = [
 ‘./index.html’,
