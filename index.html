@@ -431,6 +431,11 @@ goToPage(1,false);
 container.addEventListener('touchstart',e=>{
   touchClaimedByItem=false; pgAxis=null;
   pgStartX=e.touches[0].clientX; pgStartY=e.touches[0].clientY;
+  // If the touch didn't start inside the popover, close it
+  const pop=document.getElementById('drum-popover');
+  if(pop.classList.contains('show')&&!pop.contains(e.target)){
+    closeDrumPopover();
+  }
 },{passive:true});
 
 container.addEventListener('touchmove',e=>{
@@ -439,6 +444,8 @@ container.addEventListener('touchmove',e=>{
   if(!pgAxis){
     if(Math.abs(dx)<5&&Math.abs(dy)<5)return;
     pgAxis=Math.abs(dx)>Math.abs(dy)?'x':'y';
+    // Close time picker immediately when a horizontal swipe starts
+    if(pgAxis==='x') closeDrumPopover();
   }
   if(pgAxis==='y')return;
   e.preventDefault();
