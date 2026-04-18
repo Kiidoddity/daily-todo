@@ -13,32 +13,52 @@
 <script>
   try { if (localStorage.getItem('todo-theme') === 'dark') document.documentElement.classList.add('dark-root'); } catch(e) {}
 </script>
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-/* Prevent iOS auto-zoom on input focus (requires font-size >= 16px on all inputs) */
 input, button, select, textarea { font-size: 16px; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-html { background-color: #f5f0e8; overflow: hidden; height: 100%; -webkit-text-size-adjust: 100%; }
-html.dark-root { background-color: #000000; }
+html { background-color: #faf7f2; overflow: hidden; height: 100%; -webkit-text-size-adjust: 100%; }
+html.dark-root { background-color: #1e1b16; }
 :root {
-  --paper:#faf7f2; --paper-dark:#f0ebe0; --ink:#2c2416; --ink-light:#7a6e5f; --ink-faint:#c8bfaf;
-  --bg:#f5f0e8; --bg-a:rgba(232,168,56,0.06); --bg-b:rgba(74,95,168,0.06); --title:#2c2416;
+  --paper: #faf7f2;
+  --paper-dark: #f0ebe0;
+  --ink: #2c2416;
+  --ink-light: #7a6e5f;
+  --ink-faint: #c8bfaf;
+  --bg: #faf7f2;
+  --bg-a: rgba(232,168,56,0.06);
+  --bg-b: rgba(74,95,168,0.06);
+  --title: #2c2416;
 }
 body.dark {
-  --paper:#1e1b16; --paper-dark:#171410; --ink:#e8dfd0; --ink-light:#a89880; --ink-faint:#4a4035;
-  --bg:#000000; --bg-a:rgba(232,168,56,0.05); --bg-b:rgba(74,95,168,0.07); --title:#e8dfd0;
+  --paper: #1e1b16;
+  --paper-dark: #171410;
+  --ink: #e8dfd0;
+  --ink-light: #a89880;
+  --ink-faint: #4a4035;
+  --bg: #1e1b16;
+  --bg-a: rgba(232,168,56,0.05);
+  --bg-b: rgba(74,95,168,0.07);
+  --title: #e8dfd0;
 }
-body { font-family:'Lora','Iowan Old Style','Georgia','Palatino Linotype',serif; background-color:#f5f0e8; background-color:var(--bg); height:100%; overflow:hidden; color:#2c2416; color:var(--ink); transition:background-color .3s,color .3s; }
+body {
+  font-family: 'Lora', 'Georgia', serif;
+  background-color: var(--bg);
+  height: 100%; overflow: hidden;
+  color: var(--ink);
+  transition: background-color .3s, color .3s;
+}
 
 /* PAGE SWIPE */
 .pages-container { display:flex; width:300%; height:100vh; transition:transform .4s cubic-bezier(.25,.46,.45,.94); }
 .page {
 width:33.333%; height:100vh; overflow-y:auto; overflow-x:hidden; flex-shrink:0;
-background-color:#f5f0e8; background-color:var(–bg);
-background-image:radial-gradient(ellipse at 20% 20%,var(–bg-a) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,var(–bg-b) 0%,transparent 60%);
-padding:32px 20px 80px; -webkit-overflow-scrolling:touch;
+background-color: var(–bg);
+background-image: radial-gradient(ellipse at 20% 20%, var(–bg-a) 0%, transparent 60%),
+radial-gradient(ellipse at 80% 80%, var(–bg-b) 0%, transparent 60%);
+padding: 32px 20px 80px; -webkit-overflow-scrolling: touch;
 }
 .page-indicator { display:flex; justify-content:center; gap:8px; margin-bottom:20px; }
 .page-dot { width:6px; height:6px; border-radius:50%; background:var(–ink-faint); transition:background .2s,transform .2s; cursor:pointer; }
@@ -68,7 +88,7 @@ body.dark .theme-knob-small { transform:translateX(14px); background:#c8a96e; }
 
 /* SECTION CARDS */
 .section-card {
-background:#faf7f2; background:var(–paper); border-radius:4px;
+background: var(–paper); border-radius:4px;
 box-shadow:0 2px 0 rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.07),inset 0 0 0 1px rgba(0,0,0,.04);
 overflow:hidden; position:relative;
 }
@@ -102,7 +122,7 @@ padding-right:20px; color:white; font-size:.78rem; font-style:italic; letter-spa
 .swipe-delete-bg svg { width:16px; height:16px; stroke:white; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; fill:none; margin-left:6px; }
 .todo-item-inner {
 display:flex; align-items:center; gap:12px; padding:11px 20px;
-background:#faf7f2; background:var(–paper); position:relative; z-index:1; will-change:transform; cursor:grab;
+background: var(–paper); position:relative; z-index:1; will-change:transform; cursor:grab;
 }
 .todo-item-inner.dragging-item { opacity:.45; cursor:grabbing; }
 @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
@@ -133,7 +153,7 @@ body.dark .edit-input { background:rgba(255,255,255,.07); border-color:#4a4035; 
 body.dark .section-body { background-image:repeating-linear-gradient(to bottom,transparent,transparent 43px,rgba(255,255,255,.03) 43px,rgba(255,255,255,.03) 44px); }
 
 /* ADD AREA */
-.add-area { background:#f0ebe0; background:var(–paper-dark); border-top:1px dashed var(–ink-faint); }
+.add-area { background: var(–paper-dark); border-top:1px dashed var(–ink-faint); }
 .add-input-row { display:flex; align-items:center; gap:10px; padding:10px 20px 8px; }
 .plus-icon { width:26px; height:26px; flex-shrink:0; border-radius:50%; border:2px dashed var(–ink-faint); display:flex; align-items:center; justify-content:center; color:var(–ink-faint); font-size:1rem; user-select:none; }
 .add-area:focus-within .plus-icon { border-color:var(–ink-light); color:var(–ink-light); }
