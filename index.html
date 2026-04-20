@@ -89,11 +89,11 @@ body.dark .theme-knob-small { transform:translateX(14px); background:#c8a96e; }
 /* SECTION CARDS */
 .section-card {
 background: var(–paper); border-radius:4px;
-box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 4px 20px rgba(0,0,0,.1), inset 0 0 0 1px rgba(180,160,130,.3);
+box-shadow: 0 2px 0 rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.07), inset 0 0 0 1px rgba(0,0,0,.04);
 overflow:hidden; position:relative;
 }
 .section-card::before { content:’’; position:absolute; left:56px; top:0; bottom:0; width:1px; background:rgba(200,180,160,.3); pointer-events:none; }
-.section-card.drag-target { box-shadow:0 2px 0 rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.07),inset 0 0 0 1px rgba(0,0,0,.04); }
+.section-card.drag-target { box-shadow: 0 2px 0 rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.07), inset 0 0 0 1px rgba(0,0,0,.04); }
 .drop-zone { display:none; }
 .section-card.drag-target .drop-zone { display:none; }
 
@@ -125,10 +125,7 @@ box-shadow: 0 2px 6px rgba(0,0,0,.2);
 pointer-events: none;
 }
 
-/* Section card target highlight — no border, just keep existing shadow */
-.section-card.drag-target {
-box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 4px 20px rgba(0,0,0,.1), inset 0 0 0 1px rgba(180,160,130,.3);
-}
+/* Section card target — no visual change during drag */
 .section-header { display:flex; align-items:center; gap:10px; padding:16px 20px 14px; border-bottom:2px solid var(–paper-dark); }
 .section-title { font-family:‘Playfair Display’,‘Iowan Old Style’,Georgia,serif; font-size:1.15rem; font-weight:600; letter-spacing:-.2px; }
 .section-count { font-size:.72rem; font-style:italic; color:var(–ink-faint); letter-spacing:.05em; white-space:nowrap; }
@@ -183,29 +180,17 @@ body.dark .edit-input { background:rgba(255,255,255,.07); border-color:#4a4035; 
 .empty-msg { padding:16px 20px; font-style:italic; font-size:.875rem; color:var(–ink-faint); text-align:center; cursor:text; user-select:none; display:flex; align-items:center; justify-content:center; gap:6px; }
 .empty-msg::before { content:’+’; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; border:1.5px solid currentColor; font-size:.75rem; font-style:normal; flex-shrink:0; }
 .section-body {
-background-color: var(–paper);
-background-image:
-/* Red margin line on the left */
-linear-gradient(to right, transparent 52px, rgba(210,120,100,.25) 52px, rgba(210,120,100,.25) 53px, transparent 53px),
-/* Ruled horizontal lines */
-repeating-linear-gradient(
+background-image: repeating-linear-gradient(
 to bottom,
-transparent,
-transparent 42px,
-rgba(180,160,130,.35) 42px,
-rgba(180,160,130,.35) 43px
+transparent, transparent 43px,
+rgba(200,185,165,.18) 43px, rgba(200,185,165,.18) 44px
 );
 }
 body.dark .section-body {
-background-color: var(–paper);
-background-image:
-linear-gradient(to right, transparent 52px, rgba(180,80,60,.2) 52px, rgba(180,80,60,.2) 53px, transparent 53px),
-repeating-linear-gradient(
+background-image: repeating-linear-gradient(
 to bottom,
-transparent,
-transparent 42px,
-rgba(255,255,255,.07) 42px,
-rgba(255,255,255,.07) 43px
+transparent, transparent 43px,
+rgba(255,255,255,.05) 43px, rgba(255,255,255,.05) 44px
 );
 }
 
