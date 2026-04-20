@@ -89,44 +89,20 @@ body.dark .theme-knob-small { transform:translateX(14px); background:#c8a96e; }
 /* SECTION CARDS */
 .section-card {
 background: var(–paper); border-radius:4px;
-box-shadow: 0 2px 0 rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.07), inset 0 0 0 1px rgba(0,0,0,.04);
+box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 4px 20px rgba(0,0,0,.1), inset 0 0 0 1px rgba(180,160,130,.3);
 overflow:hidden; position:relative;
 }
 .section-card::before { content:’’; position:absolute; left:56px; top:0; bottom:0; width:1px; background:rgba(200,180,160,.3); pointer-events:none; }
-.section-card.drag-target { box-shadow: 0 2px 0 rgba(0,0,0,.04), 0 6px 24px rgba(0,0,0,.07), inset 0 0 0 1px rgba(0,0,0,.04); }
+.section-card.drag-target { box-shadow:0 2px 0 rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.07),inset 0 0 0 1px rgba(0,0,0,.04); }
 .drop-zone { display:none; }
 .section-card.drag-target .drop-zone { display:none; }
-
-/* Drop indicator — blue line showing where item will land */
-.drop-indicator {
-height: 3px;
-background: #3a9e6a;
-border-radius: 2px;
-margin: 0 20px;
-pointer-events: none;
-transition: opacity .1s;
-}
-
-/* Items shift up/down to make space during drag */
-.todo-item.drag-shift-down { transform: translateY(44px); transition: transform .18s ease; }
-.todo-item.drag-shift-up   { transform: translateY(-44px); transition: transform .18s ease; }
-.todo-item.drag-shifting   { transition: transform .18s ease; }
-
-/* Green plus badge on the ghost */
-.drag-ghost-plus {
-position: absolute;
-top: -8px; right: -8px;
-width: 20px; height: 20px;
-background: #3a9e6a;
-border-radius: 50%;
-display: flex; align-items: center; justify-content: center;
-color: white; font-size: 14px; font-weight: bold; line-height: 1;
-box-shadow: 0 2px 6px rgba(0,0,0,.2);
-pointer-events: none;
-}
-
-/* Section card target — no visual change during drag */
 .section-header { display:flex; align-items:center; gap:10px; padding:16px 20px 14px; border-bottom:2px solid var(–paper-dark); }
+
+/* Drop indicator line */
+.drop-indicator { height:3px; background:#3a9e6a; border-radius:2px; margin:0 20px; pointer-events:none; }
+
+/* Green plus on ghost */
+.drag-ghost-plus { position:absolute; top:-8px; right:-8px; width:20px; height:20px; background:#3a9e6a; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-size:14px; font-weight:bold; line-height:1; box-shadow:0 2px 6px rgba(0,0,0,.2); pointer-events:none; }
 .section-title { font-family:‘Playfair Display’,‘Iowan Old Style’,Georgia,serif; font-size:1.15rem; font-weight:600; letter-spacing:-.2px; }
 .section-count { font-size:.72rem; font-style:italic; color:var(–ink-faint); letter-spacing:.05em; white-space:nowrap; }
 .section-deadline-wrap { margin-left:auto; display:flex; align-items:center; gap:6px; flex-shrink:0; }
@@ -180,17 +156,29 @@ body.dark .edit-input { background:rgba(255,255,255,.07); border-color:#4a4035; 
 .empty-msg { padding:16px 20px; font-style:italic; font-size:.875rem; color:var(–ink-faint); text-align:center; cursor:text; user-select:none; display:flex; align-items:center; justify-content:center; gap:6px; }
 .empty-msg::before { content:’+’; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; border:1.5px solid currentColor; font-size:.75rem; font-style:normal; flex-shrink:0; }
 .section-body {
-background-image: repeating-linear-gradient(
+background-color: var(–paper);
+background-image:
+/* Red margin line on the left */
+linear-gradient(to right, transparent 52px, rgba(210,120,100,.25) 52px, rgba(210,120,100,.25) 53px, transparent 53px),
+/* Ruled horizontal lines */
+repeating-linear-gradient(
 to bottom,
-transparent, transparent 43px,
-rgba(200,185,165,.18) 43px, rgba(200,185,165,.18) 44px
+transparent,
+transparent 42px,
+rgba(180,160,130,.35) 42px,
+rgba(180,160,130,.35) 43px
 );
 }
 body.dark .section-body {
-background-image: repeating-linear-gradient(
+background-color: var(–paper);
+background-image:
+linear-gradient(to right, transparent 52px, rgba(180,80,60,.2) 52px, rgba(180,80,60,.2) 53px, transparent 53px),
+repeating-linear-gradient(
 to bottom,
-transparent, transparent 43px,
-rgba(255,255,255,.05) 43px, rgba(255,255,255,.05) 44px
+transparent,
+transparent 42px,
+rgba(255,255,255,.07) 42px,
+rgba(255,255,255,.07) 43px
 );
 }
 
@@ -278,17 +266,11 @@ body.dark .morning .section-header { border-bottom-color:rgba(232,168,56,.2); }
 body.dark .midday  .section-header { border-bottom-color:rgba(224,92,58,.15); }
 body.dark .night   .section-header { border-bottom-color:rgba(74,95,168,.2); }
 body.dark .celebration-card,.confirm-card { background:#1e1b16; }
-body.dark .celebration-title { color:#e8dfd0; }
-.confirm-title { color:var(–ink); }
+body.dark .celebration-title,.confirm-title { color:#e8dfd0; }
 body.dark .drum-popover { background:#1e1b16; }
 body.dark .drum-popover-item:hover { background:#171410; }
 body.dark .drum-popover-item.selected { background:rgba(74,95,168,.15); }
-body.dark .todo-item-inner { background:#1e1b16; }
-body.dark .drag-ghost { background:#1e1b16; }
-body.dark .section-card { background:#1e1b16; }
-body.dark .add-area { background:#171410; }
-body.dark .add-time-drum { background:#1e1b16; }
-body.dark .deadline-drum { background:#171410; }
+body.dark .todo-item-inner,.drag-ghost { background:#1e1b16; }
 </style>
 
 </head>
@@ -462,11 +444,8 @@ goToPage(1,false);
 container.addEventListener('touchstart',e=>{
   touchClaimedByItem=false; pgAxis=null;
   pgStartX=e.touches[0].clientX; pgStartY=e.touches[0].clientY;
-  // If the touch didn't start inside the popover, close it
   const pop=document.getElementById('drum-popover');
-  if(pop.classList.contains('show')&&!pop.contains(e.target)){
-    closeDrumPopover();
-  }
+  if(pop.classList.contains('show')&&!pop.contains(e.target)) closeDrumPopover();
 },{passive:true});
 
 container.addEventListener('touchmove',e=>{
@@ -475,7 +454,6 @@ container.addEventListener('touchmove',e=>{
   if(!pgAxis){
     if(Math.abs(dx)<5&&Math.abs(dy)<5)return;
     pgAxis=Math.abs(dx)>Math.abs(dy)?'x':'y';
-    // Close time picker immediately when a horizontal swipe starts
     if(pgAxis==='x') closeDrumPopover();
   }
   if(pgAxis==='y')return;
@@ -909,127 +887,71 @@ function startDrag(li,inner,page,section,id,x,y){
   const r=li.getBoundingClientRect();
   const ghost=document.createElement('div');
   ghost.className='drag-ghost';
-  ghost.style.cssText=`width:${r.width}px;top:${r.top}px;left:${r.left}px;position:fixed;`;
-
+  ghost.style.cssText=`position:fixed;width:${r.width}px;top:${r.top}px;left:${r.left}px;`;
   const item=state[page][section].find(i=>i.id===id);
-  if(item){
-    const c=mkCanvas(`gh-${id}`,item.done);ghost.appendChild(c);
-    const s=document.createElement('span');s.textContent=item.text;ghost.appendChild(s);
-  }
-  // Green plus badge
-  const plus=document.createElement('div');plus.className='drag-ghost-plus';plus.textContent='+';
-  ghost.appendChild(plus);
-  ghost.style.position='fixed';
-
+  if(item){const c=mkCanvas(`gh-${id}`,item.done);ghost.appendChild(c);const s=document.createElement('span');s.textContent=item.text;ghost.appendChild(s);}
+  const plus=document.createElement('div');plus.className='drag-ghost-plus';plus.textContent='+';ghost.appendChild(plus);
   document.body.appendChild(ghost);
   inner.classList.add('dragging-item');
-  dragActive={page,section,id,ghost,li,inner,offsetY:y-r.top,dropPage:page,dropSection:section,dropIndex:-1,lastX:x,lastY:y};
+  dragActive={page,section,id,ghost,li,inner,offsetY:y-r.top};
+  _lastDropPage=null;_lastDropSection=null;_lastDropIndex=-1;
   try{if(navigator.vibrate)navigator.vibrate(22);}catch(e){}
 }
 
-// Track last known insert position so endDrag can use it after ghost is removed
 let _lastDropPage=null,_lastDropSection=null,_lastDropIndex=-1;
 
 function moveDrag(x,y){
   if(!dragActive)return;
   dragActive.ghost.style.top=`${y-dragActive.offsetY}px`;
-  dragActive.lastX=x; dragActive.lastY=y;
 
-  // Find which section card the ghost is over
+  // Find target card
   let targetCard=null;
   document.querySelectorAll('.section-card').forEach(c=>{
     const r=c.getBoundingClientRect();
     if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom) targetCard=c;
   });
 
-  // Clear all highlights and indicators
   document.querySelectorAll('.section-card').forEach(c=>c.classList.remove('drag-target'));
   document.querySelectorAll('.drop-indicator').forEach(d=>d.remove());
-  document.querySelectorAll('.todo-item').forEach(i=>{i.classList.remove('drag-shift-down','drag-shift-up','drag-shifting');});
 
   if(!targetCard||!targetCard.id)return;
-
-  const parts=targetCard.id.split('-');
-  const tp=parts[1],ts=parts[2];
+  const parts=targetCard.id.split('-'),tp=parts[1],ts=parts[2];
   targetCard.classList.add('drag-target');
 
-  // Find insert position within the target list
   const listEl=document.getElementById(`list-${tp}-${ts}`);
   if(!listEl)return;
+  const lis=[...listEl.querySelectorAll('.todo-item')].filter(el=>el!==dragActive.li);
+  let insertIdx=lis.length;
+  for(let i=0;i<lis.length;i++){const r=lis[i].getBoundingClientRect();if(y<r.top+r.height/2){insertIdx=i;break;}}
 
-  const lis=[...listEl.querySelectorAll('.todo-item')].filter(item=>item!==dragActive.li);
-  let insertIdx=lis.length; // default: end of list
+  _lastDropPage=tp;_lastDropSection=ts;_lastDropIndex=insertIdx;
 
-  for(let i=0;i<lis.length;i++){
-    const r=lis[i].getBoundingClientRect();
-    if(y<r.top+r.height/2){insertIdx=i;break;}
-  }
-
-  _lastDropPage=tp; _lastDropSection=ts; _lastDropIndex=insertIdx;
-
-  // Show drop indicator line
-  const indicator=document.createElement('div');
-  indicator.className='drop-indicator';
-  if(insertIdx===0){
-    // Before first item
-    if(lis.length>0) listEl.insertBefore(indicator,lis[0]);
-    else listEl.appendChild(indicator);
-  } else if(insertIdx>=lis.length){
-    listEl.appendChild(indicator);
-  } else {
-    listEl.insertBefore(indicator,lis[insertIdx]);
-  }
-
-  // Shift items in the same section to make visual space
-  if(tp===dragActive.page&&ts===dragActive.section){
-    const allLis=[...listEl.querySelectorAll('.todo-item')].filter(item=>item!==dragActive.li);
-    const srcIdx=state[dragActive.page][dragActive.section].findIndex(i=>i.id===dragActive.id);
-    allLis.forEach((item,i)=>{
-      item.classList.add('drag-shifting');
-      // Real index in full list (excluding dragged item)
-      const realI = i >= srcIdx ? i+1 : i;
-      if(realI >= insertIdx && i < (srcIdx < insertIdx ? insertIdx-1 : insertIdx)){
-        // no shift needed in same direction
-      }
-    });
-  }
+  // Show drop line
+  const ind=document.createElement('div');ind.className='drop-indicator';
+  if(insertIdx===0){ if(lis.length>0)listEl.insertBefore(ind,lis[0]);else listEl.appendChild(ind); }
+  else if(insertIdx>=lis.length){ listEl.appendChild(ind); }
+  else { listEl.insertBefore(ind,lis[insertIdx]); }
 }
 
 function endDrag(){
   if(!dragActive)return;
   const{page,section,id,ghost,inner}=dragActive;
-  const tp=_lastDropPage||page, ts=_lastDropSection||section, ti=_lastDropIndex;
+  const tp=_lastDropPage||page,ts=_lastDropSection||section,ti=_lastDropIndex;
   dragActive=null;
-
-  ghost.remove();
-  inner.classList.remove('dragging-item');
-  touchClaimedByItem=false;
-
-  // Clean up
+  ghost.remove();inner.classList.remove('dragging-item');touchClaimedByItem=false;
   document.querySelectorAll('.section-card').forEach(c=>c.classList.remove('drag-target'));
   document.querySelectorAll('.drop-indicator').forEach(d=>d.remove());
-  document.querySelectorAll('.todo-item').forEach(i=>i.classList.remove('drag-shift-down','drag-shift-up','drag-shifting'));
-
-  _lastDropPage=null; _lastDropSection=null; _lastDropIndex=-1;
-
+  _lastDropPage=null;_lastDropSection=null;_lastDropIndex=-1;
   if(!tp)return;
-
-  if(tp===page&&ts===section){
-    reorderSection(page,section,id,ti);
-  } else {
-    moveTask(page,section,id,tp,ts,ti);
-  }
+  if(tp===page&&ts===section) reorderSection(page,section,id,ti);
+  else moveTask(page,section,id,tp,ts,ti);
 }
 
 function moveTask(fp,fs,id,tp,ts,insertIdx){
   const fl=state[fp][fs],idx=fl.findIndex(i=>i.id===id);if(idx===-1)return;
   const[task]=fl.splice(idx,1);task.done=false;
-  // Insert at specific position in target section
-  if(typeof insertIdx==='number'&&insertIdx>=0&&insertIdx<=state[tp][ts].length){
-    state[tp][ts].splice(insertIdx,0,task);
-  } else {
-    state[tp][ts].push(task);
-  }
+  const ti=typeof insertIdx==='number'&&insertIdx>=0?Math.min(insertIdx,state[tp][ts].length):state[tp][ts].length;
+  state[tp][ts].splice(ti,0,task);
   render(fp,fs);render(tp,ts);saveState(fp);if(tp!==fp)saveState(tp);
   showToast(`Moved to ${tp==='today'?"today's":tp==="tomorrow"?"tomorrow's":"yesterday's"} ${ts}`);
 }
@@ -1038,12 +960,8 @@ function reorderSection(page,section,id,insertIdx){
   const items=state[page][section];
   const fromIdx=items.findIndex(i=>i.id===id);if(fromIdx===-1)return;
   const[task]=items.splice(fromIdx,1);
-  // insertIdx was calculated from the list excluding the dragged item
-  // so it's already the correct target index after removal
-  let targetIdx=insertIdx;
-  if(targetIdx<0)targetIdx=0;
-  if(targetIdx>items.length)targetIdx=items.length;
-  items.splice(targetIdx,0,task);
+  const ti=typeof insertIdx==='number'&&insertIdx>=0?Math.min(insertIdx,items.length):items.length;
+  items.splice(ti,0,task);
   render(page,section);saveState(page);
 }
 
