@@ -1,4 +1,4 @@
-const CACHE_NAME = 'daily-todo-drag-v2';
+const CACHE_NAME = 'daily-todo-drag-v3';
 const STATIC_ASSETS = ['./index.html','./manifest.json','./icon-192.png','./icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(STATIC_ASSETS)).then(()=>self.skipWaiting()));
