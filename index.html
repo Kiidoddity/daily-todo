@@ -77,7 +77,8 @@ body {
 .page-dot.active { background:var(--grad-night); background:linear-gradient(135deg,#DD2A7B,#8134AF); transform:scale(1.4); }
 
 /* HEADER */
-.page-header { text-align:center; margin-bottom:36px; }
+.page-header { text-align:center; margin-bottom:36px; position:relative; }
+.signout-corner-btn { position:absolute; top:-4px; right:0; }
 .date-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px; }
 .date-line { font-size:.76rem; font-weight:600; color:var(--ink-faint); letter-spacing:.07em; text-transform:uppercase; }
 .theme-toggle-small {
@@ -325,7 +326,8 @@ body.dark .repeat-btn:hover { color:#B89CF0; border-color:#8134AF; }
   background:var(--grad-full); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
   margin-bottom:6px;
 }
-.auth-subtitle { text-align:center; color:var(--ink-light); font-weight:500; font-size:.9rem; margin-bottom:28px; }
+.auth-subtitle { display:none; }
+.auth-title { margin-bottom:28px; }
 .auth-field { margin-bottom:12px; }
 .auth-field input {
   width:100%; padding:13px 16px; border-radius:14px; border:1.5px solid var(--card-border);
@@ -333,6 +335,16 @@ body.dark .repeat-btn:hover { color:#B89CF0; border-color:#8134AF; }
   transition:border-color .15s;
 }
 .auth-field input:focus { border-color:#8134AF; }
+.auth-password-field { position:relative; }
+.auth-password-field input { padding-right:46px; }
+.auth-password-toggle {
+  position:absolute; top:50%; right:6px; transform:translateY(-50%); width:34px; height:34px; border-radius:50%;
+  border:none; background:none; color:var(--ink-faint); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; padding:0; transition:color .15s;
+}
+.auth-password-toggle:hover { color:var(--ink-light); }
+.auth-password-toggle svg { width:19px; height:19px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+.auth-password-toggle.showing { color:#8134AF; }
 .auth-submit-btn {
   width:100%; margin-top:6px; padding:13px; border:none; border-radius:999px; color:#fff;
   font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-weight:700; font-size:.95rem;
@@ -396,12 +408,12 @@ body.dark .repeat-btn:hover { color:#B89CF0; border-color:#8134AF; }
 body.dark .morning .section-header { border-bottom-color:rgba(245,133,41,.22); }
 body.dark .midday  .section-header { border-bottom-color:rgba(221,42,123,.22); }
 body.dark .night   .section-header { border-bottom-color:rgba(88,81,219,.25); }
-body.dark .celebration-card,.confirm-card { background:#16121f; }
+body.dark .celebration-card,body.dark .confirm-card { background:#16121f; }
 body.dark .confirm-title { color:#f5f2fb; }
 body.dark .drum-popover { background:#16121f; }
 body.dark .drum-popover-item:hover { background:#171410; }
 body.dark .drum-popover-item.selected { background:rgba(139,135,245,.18); }
-body.dark .todo-item-inner,.drag-ghost { background:#16121f; }
+body.dark .todo-item-inner,body.dark .drag-ghost { background:#16121f; }
 </style>
 </head>
 <body>
@@ -409,9 +421,13 @@ body.dark .todo-item-inner,.drag-ghost { background:#16121f; }
 <div class="auth-overlay" id="auth-overlay">
   <div class="auth-card">
     <h1 class="auth-title">Daily To-Do</h1>
-    <p class="auth-subtitle" id="auth-subtitle">Sign in to sync your lists</p>
     <div class="auth-field"><input type="email" id="auth-email" placeholder="Email" autocomplete="email" autocapitalize="off"/></div>
-    <div class="auth-field"><input type="password" id="auth-password" placeholder="Password" autocomplete="current-password"/></div>
+    <div class="auth-field auth-password-field">
+      <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password"/>
+      <button type="button" class="auth-password-toggle" id="auth-password-toggle" aria-label="Show password">
+        <svg viewBox="0 0 24 24" id="auth-eye-icon"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+    </div>
     <button class="auth-submit-btn" id="auth-submit-btn">Sign In</button>
     <button class="auth-toggle-mode-btn" id="auth-toggle-mode-btn">Don't have an account? <span>Sign up</span></button>
     <p class="auth-error" id="auth-error"></p>
@@ -455,11 +471,11 @@ body.dark .todo-item-inner,.drag-ghost { background:#16121f; }
     <div class="page-dot" data-page="0"></div><div class="page-dot active" data-page="1"></div><div class="page-dot" data-page="2"></div>
   </div>
   <header class="page-header">
+    <button class="header-icon-btn signout-corner-btn" id="signout-btn" aria-label="Sign out"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     <div class="date-row">
       <button class="header-icon-btn" id="calendar-btn" aria-label="Open calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></button>
       <span class="date-line" id="date-today"></span>
       <button class="theme-toggle-small" id="theme-toggle" aria-label="Toggle dark mode"><span class="theme-knob-small" id="theme-knob">☀️</span></button>
-      <button class="header-icon-btn" id="signout-btn" aria-label="Sign out"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
     </div>
     <h1>Daily To-Do</h1>
   </header>
@@ -561,7 +577,7 @@ body.dark .todo-item-inner,.drag-ghost { background:#16121f; }
 </div>
 <div class="confirm-overlay" id="confirm-overlay">
   <div class="confirm-backdrop" id="confirm-backdrop"></div>
-  <div class="confirm-card"><p class="confirm-title">Clear this list?</p><p class="confirm-sub">This will remove all tasks. This can't be undone.</p><div class="confirm-btns"><button class="confirm-yes" id="confirm-yes-btn">Yes, clear it</button><button class="confirm-no" id="confirm-no-btn">Cancel</button></div></div>
+  <div class="confirm-card"><p class="confirm-title" id="confirm-title">Clear this list?</p><p class="confirm-sub" id="confirm-sub">This will remove all tasks. This can't be undone.</p><div class="confirm-btns"><button class="confirm-yes" id="confirm-yes-btn">Yes, clear it</button><button class="confirm-no" id="confirm-no-btn">Cancel</button></div></div>
 </div>
 
 <!-- Time conflict dialog -->
@@ -598,6 +614,7 @@ let historyDate=null; // 'YYYY-MM-DD' currently shown in the history overlay
 ═══════════════════════════════════════════════════════════════ */
 const SUPABASE_URL='https://zgjasvtlpdaqnxvxynig.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_eX0t656vvYzlVbfi5Rwjrg_WavQr_GQ';
+  
 if(!window.supabase){
   document.body.innerHTML='<div style="padding:60px 24px;text-align:center;font-family:-apple-system,sans-serif;color:#a89bc2;background:#09070d;min-height:100vh;">Couldn\'t load the required library.<br>Check your connection and reload.</div>';
   throw new Error('Supabase JS failed to load from CDN');
@@ -1578,13 +1595,22 @@ function pullToday(section){
   else{render('tomorrow',section);saveState('tomorrow');showToast(`Added ${added} task${added>1?'s':''} from today`);}
 }
 
-let pendingClear=null;
+// Generic reusable confirm dialog — pass title/subtitle text, the
+// confirm button's label, and what to run if the person confirms.
+function showConfirm(title,sub,confirmLabel,onConfirm){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-sub').textContent=sub;
+  const yesBtn=document.getElementById('confirm-yes-btn');
+  yesBtn.textContent=confirmLabel;
+  document.getElementById('confirm-overlay').classList.add('show');
+  yesBtn.onclick=()=>{ dismissConfirm(); onConfirm(); };
+}
+
 function confirmClear(page,section){
   if(!state[page][section].length){showToast('This list is already empty');return;}
-  pendingClear={page,section};document.getElementById('confirm-overlay').classList.add('show');
-  document.getElementById('confirm-yes-btn').onclick=()=>{clearSection(pendingClear.page,pendingClear.section);dismissConfirm();};
+  showConfirm('Clear this list?',"This will remove all tasks. This can't be undone.",'Yes, clear it',()=>clearSection(page,section));
 }
-function dismissConfirm(){document.getElementById('confirm-overlay').classList.remove('show');pendingClear=null;}
+function dismissConfirm(){document.getElementById('confirm-overlay').classList.remove('show');}
 function clearSection(page,section){state[page][section].forEach(i=>cancelAnim(`${page}-${section}-${i.id}`));state[page][section]=[];render(page,section);saveState(page);showToast('List cleared');}
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1642,15 +1668,12 @@ function computeStreaks(y){
 let authMode='signin'; // 'signin' | 'signup'
 
 function updateAuthModeUI(){
-  const sub=document.getElementById('auth-subtitle');
   const submitBtn=document.getElementById('auth-submit-btn');
   const toggleBtn=document.getElementById('auth-toggle-mode-btn');
   if(authMode==='signup'){
-    sub.textContent='Create an account to sync your lists';
     submitBtn.textContent='Sign Up';
     toggleBtn.innerHTML='Already have an account? <span>Sign in</span>';
   } else {
-    sub.textContent='Sign in to sync your lists';
     submitBtn.textContent='Sign In';
     toggleBtn.innerHTML="Don't have an account? <span>Sign up</span>";
   }
@@ -1696,6 +1719,9 @@ async function handleAuthSubmit(){
 
 async function signOut(){
   await sb.auth.signOut();
+}
+function confirmSignOut(){
+  showConfirm('Sign out?',"You'll need to sign back in to see your lists again.",'Sign out',signOut);
 }
 
 // Runs once we have a signed-in user: loads today/yesterday/tomorrow from
@@ -1848,7 +1874,19 @@ document.getElementById('confirm-no-btn').addEventListener('click',dismissConfir
 document.getElementById('auth-submit-btn').addEventListener('click',handleAuthSubmit);
 document.getElementById('auth-toggle-mode-btn').addEventListener('click',()=>{authMode=authMode==='signin'?'signup':'signin';document.getElementById('auth-error').textContent='';updateAuthModeUI();});
 document.getElementById('auth-password').addEventListener('keydown',e=>{if(e.key==='Enter')handleAuthSubmit();});
-document.getElementById('signout-btn').addEventListener('click',signOut);
+document.getElementById('auth-password-toggle').addEventListener('click',()=>{
+  const input=document.getElementById('auth-password');
+  const btn=document.getElementById('auth-password-toggle');
+  const icon=document.getElementById('auth-eye-icon');
+  const showing=input.type==='password';
+  input.type=showing?'text':'password';
+  btn.classList.toggle('showing',showing);
+  btn.setAttribute('aria-label',showing?'Hide password':'Show password');
+  icon.innerHTML=showing
+    ? '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a21.6 21.6 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a21.6 21.6 0 0 1-2.61 3.81M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/>';
+});
+document.getElementById('signout-btn').addEventListener('click',confirmSignOut);
 
 document.getElementById('calendar-btn').addEventListener('click',openCalendar);
 document.getElementById('calendar-backdrop').addEventListener('click',closeCalendar);
