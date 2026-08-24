@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Daily To-Do">
-<meta name="theme-color" content="#c8a96e">
+<meta name="theme-color" content="#DD2A7B">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
@@ -17,36 +17,46 @@
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,500;0,600;0,700;0,800;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 input, button, select, textarea { font-size: 16px; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 html { background-color: #faf7f2; overflow: hidden; height: 100%; -webkit-text-size-adjust: 100%; }
 html.dark-root { background-color: #1e1b16; }
 :root {
-  --paper: #faf7f2;
-  --paper-dark: #f0ebe0;
-  --ink: #2c2416;
-  --ink-light: #7a6e5f;
-  --ink-faint: #c8bfaf;
-  --bg: #faf7f2;
-  --bg-a: rgba(232,168,56,0.06);
-  --bg-b: rgba(74,95,168,0.06);
-  --title: #2c2416;
+  --paper: #ffffff;
+  --paper-dark: #f7f2fb;
+  --ink: #1a1523;
+  --ink-light: #6f6580;
+  --ink-faint: #ddd4ea;
+  --bg: #fbf8fd;
+  --bg-a: rgba(245,133,41,0.09);
+  --bg-b: rgba(129,52,175,0.08);
+  --title: #1a1523;
+  --card-border: rgba(26,21,35,0.07);
+  --card-shadow: 0 1px 0 rgba(26,21,35,.04), 0 8px 20px rgba(129,52,175,.08);
+  --grad-morning: linear-gradient(135deg,#FEDA75 0%,#F58529 55%,#F1544A 100%);
+  --grad-midday: linear-gradient(135deg,#F58529 0%,#DD2A7B 55%,#C1268F 100%);
+  --grad-night: linear-gradient(135deg,#8134AF 0%,#5851DB 60%,#3A4DC7 100%);
+  --grad-full: linear-gradient(135deg,#FEDA75,#F58529,#DD2A7B,#8134AF,#5851DB);
+  --ig-red: #ED4956;
 }
 body.dark {
-  --paper: #1e1b16;
-  --paper-dark: #171410;
-  --ink: #e8dfd0;
-  --ink-light: #a89880;
-  --ink-faint: #4a4035;
-  --bg: #1e1b16;
-  --bg-a: rgba(232,168,56,0.05);
-  --bg-b: rgba(74,95,168,0.07);
-  --title: #e8dfd0;
+  --paper: #16121f;
+  --paper-dark: #0e0b15;
+  --ink: #f5f2fb;
+  --ink-light: #a89bc2;
+  --ink-faint: #3a3049;
+  --bg: #09070d;
+  --bg-a: rgba(245,133,41,0.13);
+  --bg-b: rgba(88,81,219,0.14);
+  --title: #ffffff;
+  --card-border: rgba(255,255,255,0.08);
+  --card-shadow: 0 1px 0 rgba(0,0,0,.2), 0 10px 24px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.04);
 }
 body {
-  font-family: 'Lora', 'Georgia', serif;
+  font-family: 'Inter', -apple-system, sans-serif;
   background-color: var(--bg);
   height: 100%; overflow: hidden;
   color: var(--ink);
@@ -64,37 +74,47 @@ body {
 }
 .page-indicator { display:flex; justify-content:center; gap:8px; margin-bottom:20px; }
 .page-dot { width:6px; height:6px; border-radius:50%; background:var(--ink-faint); transition:background .2s,transform .2s; cursor:pointer; }
-.page-dot.active { background:var(--ink-light); transform:scale(1.3); }
+.page-dot.active { background:var(--grad-night); background:linear-gradient(135deg,#DD2A7B,#8134AF); transform:scale(1.4); }
 
 /* HEADER */
 .page-header { text-align:center; margin-bottom:36px; }
 .date-row { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:6px; }
-.date-line { font-size:.78rem; color:var(--ink-faint); letter-spacing:.08em; text-transform:uppercase; }
+.date-line { font-size:.76rem; font-weight:600; color:var(--ink-faint); letter-spacing:.07em; text-transform:uppercase; }
 .theme-toggle-small {
-  width:34px; height:20px; background:var(--paper-dark); border:1.5px solid var(--ink-faint);
-  border-radius:10px; cursor:pointer; padding:0; position:relative; flex-shrink:0;
+  width:38px; height:22px; background:var(--paper-dark); border:1.5px solid var(--card-border);
+  border-radius:999px; cursor:pointer; padding:0; position:relative; flex-shrink:0;
   transition:background .3s,border-color .3s; outline:none;
 }
 .theme-toggle-small:hover { border-color:var(--ink-light); }
 .theme-knob-small {
-  position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:50%;
-  background:var(--ink-light); transition:transform .25s cubic-bezier(.16,1,.3,1),background .3s;
-  display:flex; align-items:center; justify-content:center; font-size:8px; line-height:1;
+  position:absolute; top:2px; left:2px; width:16px; height:16px; border-radius:50%;
+  background:var(--ink-light); transition:transform .25s cubic-bezier(.34,1.5,.64,1),background .3s;
+  display:flex; align-items:center; justify-content:center; font-size:9px; line-height:1;
 }
-body.dark .theme-knob-small { transform:translateX(14px); background:#c8a96e; }
-.page-header h1 { font-family:'Playfair Display','Iowan Old Style',Georgia,serif; font-size:clamp(1.8rem,5vw,3rem); font-weight:700; letter-spacing:-.5px; color:var(--title); line-height:1.1; }
-.page-label { font-style:italic; color:var(--ink-light); font-size:.85rem; margin-top:4px; }
-#page-tomorrow .page-header h1 { color:#4a5fa8; }
-.swipe-hint { text-align:center; font-size:.72rem; font-style:italic; color:var(--ink-faint); letter-spacing:.06em; margin-top:-24px; margin-bottom:20px; user-select:none; }
+body.dark .theme-knob-small { transform:translateX(16px); background:var(--grad-full); box-shadow:0 0 10px rgba(221,42,123,.5); }
+.page-header h1 { font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-size:clamp(1.8rem,5vw,3rem); font-weight:800; letter-spacing:-.02em; color:var(--title); line-height:1.1; }
+#page-today .page-header h1 {
+  background:var(--grad-full); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  background-size:200% auto; animation:gradShift 8s ease-in-out infinite alternate;
+}
+@keyframes gradShift { from{background-position:0% 50%} to{background-position:100% 50%} }
+.page-label { color:var(--ink-light); font-weight:600; font-size:.85rem; margin-top:4px; }
+#page-tomorrow .page-header h1 { color:#8134AF; }
+body.dark #page-tomorrow .page-header h1 { color:#B89CF0; }
+.swipe-hint { text-align:center; font-size:.72rem; font-weight:600; color:var(--ink-faint); letter-spacing:.04em; margin-top:-24px; margin-bottom:20px; user-select:none; }
 .sections-wrapper { max-width:680px; margin:0 auto; display:flex; flex-direction:column; gap:32px; }
 
 /* SECTION CARDS */
 .section-card {
-  background: var(--paper); border-radius:4px;
-  box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 4px 20px rgba(0,0,0,.1), inset 0 0 0 1px rgba(180,160,130,.3);
+  background: var(--paper); border-radius:22px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--card-border);
   overflow:hidden; position:relative;
 }
-.section-card::before { content:''; position:absolute; left:56px; top:0; bottom:0; width:1px; background:rgba(200,180,160,.3); pointer-events:none; }
+.section-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; z-index:2; pointer-events:none; }
+.morning.section-card::before { background:var(--grad-morning); }
+.midday.section-card::before  { background:var(--grad-midday); }
+.night.section-card::before   { background:var(--grad-night); }
 .drop-zone { display:none; }
 .section-card.drag-target .drop-zone { display:none; }
 
@@ -127,27 +147,37 @@ body.dark .theme-knob-small { transform:translateX(14px); background:#c8a96e; }
 /* Section card during drag — no visual change */
 .section-card.drag-target { box-shadow:0 2px 0 rgba(0,0,0,.04),0 6px 24px rgba(0,0,0,.07),inset 0 0 0 1px rgba(0,0,0,.04); }
 .section-header { display:flex; align-items:center; gap:10px; padding:16px 20px 14px; border-bottom:2px solid var(--paper-dark); }
-.section-title { font-family:'Playfair Display','Iowan Old Style',Georgia,serif; font-size:1.15rem; font-weight:600; letter-spacing:-.2px; }
-.section-count { font-size:.72rem; font-style:italic; color:var(--ink-faint); letter-spacing:.05em; white-space:nowrap; }
+.section-title { font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-size:1.15rem; font-weight:600; letter-spacing:-.2px; }
+.section-count { font-size:.72rem; font-weight:600; color:var(--ink-faint); letter-spacing:.03em; white-space:nowrap; }
 .section-deadline-wrap { margin-left:auto; display:flex; align-items:center; gap:6px; flex-shrink:0; }
-.section-deadline-label { font-size:.7rem; font-style:italic; color:var(--ink-faint); white-space:nowrap; }
-.deadline-drum { position:relative; width:54px; height:26px; overflow:hidden; border:1px solid var(--ink-faint); border-radius:4px; background:var(--paper-dark); cursor:pointer; user-select:none; }
-.deadline-drum-inner { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.72rem; color:var(--ink); font-style:italic; pointer-events:none; }
+.section-deadline-label { font-size:.7rem; font-weight:600; color:var(--ink-faint); white-space:nowrap; }
+.story-bar { display:flex; gap:4px; padding:0 20px 12px; }
+.story-bar.empty { display:none; }
+.story-segment { flex:1; height:3.5px; border-radius:999px; background:var(--ink-faint); opacity:.5; transition:opacity .25s,background .3s; }
+.story-segment.filled { opacity:1; }
+.morning .story-segment.filled { background:var(--grad-morning); }
+.midday  .story-segment.filled { background:var(--grad-midday); }
+.night   .story-segment.filled { background:var(--grad-night); }
+.deadline-drum { position:relative; width:56px; height:28px; overflow:hidden; border:1px solid var(--card-border); border-radius:999px; background:var(--paper-dark); cursor:pointer; user-select:none; }
+.deadline-drum-inner { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-family:'Inter',-apple-system,sans-serif; font-size:.72rem; color:var(--ink); pointer-events:none; }
 .deadline-drum::before,.deadline-drum::after { content:''; position:absolute; left:0; right:0; height:8px; z-index:2; pointer-events:none; }
 .deadline-drum::before { top:0; background:linear-gradient(to bottom,var(--paper-dark),transparent); }
 .deadline-drum::after  { bottom:0; background:linear-gradient(to top,var(--paper-dark),transparent); }
-.morning .section-header { border-bottom-color:rgba(232,168,56,.3); } .morning .section-title { color:#b07a10; }
-.midday  .section-header { border-bottom-color:rgba(224,92,58,.25); }  .midday  .section-title { color:#b83d1e; }
-.night   .section-header { border-bottom-color:rgba(74,95,168,.25); }  .night   .section-title { color:#4a5fa8; }
+.morning .section-header { border-bottom-color:rgba(245,133,41,.18); } .morning .section-title { color:#F58529; }
+.midday  .section-header { border-bottom-color:rgba(221,42,123,.18); }  .midday  .section-title { color:#DD2A7B; }
+.night   .section-header { border-bottom-color:rgba(88,81,219,.2); }  .night   .section-title { color:#5851DB; }
+body.dark .morning .section-title { color:#FFA94D; }
+body.dark .midday  .section-title { color:#FF5C9E; }
+body.dark .night   .section-title { color:#8B87F5; }
 
 /* TODO ITEMS */
 .todo-list { list-style:none; padding:0; }
 .todo-item { position:relative; overflow:hidden; border-bottom:1px solid var(--paper-dark); }
 .todo-item:last-child { border-bottom:none; }
 .swipe-delete-bg {
-  position:absolute; inset:0; background:#c0392b;
+  position:absolute; inset:0; background:var(--ig-red);
   display:flex; align-items:center; justify-content:flex-end;
-  padding-right:20px; color:white; font-size:.78rem; font-style:italic; letter-spacing:.05em; pointer-events:none;
+  padding-right:20px; color:white; font-size:.78rem; letter-spacing:.05em; pointer-events:none;
 }
 .swipe-delete-bg svg { width:16px; height:16px; stroke:white; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; fill:none; margin-left:6px; }
 .todo-item-inner {
@@ -165,140 +195,228 @@ body.dark .theme-knob-small { transform:translateX(14px); background:#c8a96e; }
 /* TEXT + BADGES */
 .todo-text { font-size:.95rem; line-height:1.5; flex:1; min-width:0; cursor:text; transition:color .2s; }
 .todo-text.strikethrough { color:var(--ink-faint); text-decoration:line-through; text-decoration-color:var(--ink-faint); }
-.task-time-badge { flex-shrink:0; font-size:.7rem; font-family:'Lora','Iowan Old Style','Georgia',serif; font-style:italic; color:var(--ink-light); background:var(--paper-dark); border:1px solid var(--ink-faint); border-radius:10px; padding:2px 7px; white-space:nowrap; cursor:pointer; user-select:none; transition:border-color .15s,color .15s; }
-.task-time-badge:hover { border-color:var(--ink-light); color:var(--ink); }
-.inline-time-btn { flex-shrink:0; font-size:.7rem; font-family:'Lora','Iowan Old Style','Georgia',serif; font-style:italic; color:var(--ink-faint); background:var(--paper-dark); border:1px dashed var(--ink-faint); border-radius:10px; padding:2px 7px; white-space:nowrap; cursor:pointer; user-select:none; transition:border-color .15s,color .15s; }
+.task-time-badge { flex-shrink:0; font-size:.7rem; font-family:'Inter',-apple-system,sans-serif; font-weight:600; color:var(--ink-light); background:var(--paper-dark); border:1px solid var(--card-border); border-radius:999px; padding:3px 10px; white-space:nowrap; cursor:pointer; user-select:none; transition:border-color .15s,color .15s,transform .15s; }
+.task-time-badge:hover { border-color:#8134AF; color:#8134AF; transform:translateY(-1px); }
+.inline-time-btn { flex-shrink:0; font-size:.7rem; font-family:'Inter',-apple-system,sans-serif; font-weight:600; color:var(--ink-faint); background:var(--paper-dark); border:1px dashed var(--ink-faint); border-radius:999px; padding:3px 10px; white-space:nowrap; cursor:pointer; user-select:none; transition:border-color .15s,color .15s; }
 .inline-time-btn:hover { border-color:var(--ink-light); color:var(--ink-light); }
 .inline-time-btn.has-time { border-style:solid; color:var(--ink-light); }
-.streak-badge { flex-shrink:0; font-size:.75rem; font-family:'Lora','Iowan Old Style','Georgia',serif; font-style:italic; color:#c07020; background:rgba(224,168,56,.12); border:1px solid rgba(224,168,56,.25); border-radius:20px; padding:2px 7px; white-space:nowrap; user-select:none; }
-body.dark .streak-badge { color:#e8a838; }
+.streak-badge { flex-shrink:0; font-size:.74rem; font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-weight:700; color:#fff; background:var(--grad-morning); border:none; border-radius:999px; padding:3px 9px; white-space:nowrap; user-select:none; box-shadow:0 2px 8px rgba(245,133,41,.3); }
 .streak-badge.milestone { animation:streakPop .6s cubic-bezier(.16,1,.3,1) both; }
 @keyframes streakPop { 0%{transform:scale(1)} 30%{transform:scale(1.5) rotate(-8deg)} 55%{transform:scale(.9) rotate(4deg)} 75%{transform:scale(1.15) rotate(-2deg)} 100%{transform:scale(1) rotate(0)} }
-.edit-input { flex:1; min-width:0; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:16px; color:var(--ink); background:rgba(255,255,255,.75); border:1px solid var(--ink-faint); border-radius:3px; padding:2px 8px; outline:none; }
+.edit-input { flex:1; min-width:0; font-family:'Inter',-apple-system,sans-serif; font-size:16px; color:var(--ink); background:rgba(129,52,175,.06); border:1.5px solid #8134AF; border-radius:10px; padding:4px 10px; outline:none; }
 .edit-input:focus { border-color:var(--ink-light); }
-body.dark .edit-input { background:rgba(255,255,255,.07); border-color:#4a4035; color:#e8dfd0; }
-.empty-msg { padding:16px 20px; font-style:italic; font-size:.875rem; color:var(--ink-faint); text-align:center; cursor:text; user-select:none; display:flex; align-items:center; justify-content:center; gap:6px; }
+body.dark .edit-input { background:rgba(139,135,245,.09); border-color:#8B87F5; color:#f5f2fb; }
+.empty-msg { padding:18px 20px; font-size:.875rem; font-weight:500; color:var(--ink-faint); text-align:center; cursor:text; user-select:none; display:flex; align-items:center; justify-content:center; gap:6px; }
 .empty-msg::before { content:'+'; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; border:1.5px solid currentColor; font-size:.75rem; font-style:normal; flex-shrink:0; }
-.section-body {
-  background-color: var(--paper);
-  background-image:
-    /* Red margin line on the left */
-    linear-gradient(to right, transparent 52px, rgba(210,120,100,.25) 52px, rgba(210,120,100,.25) 53px, transparent 53px),
-    /* Ruled horizontal lines */
-    repeating-linear-gradient(
-      to bottom,
-      transparent,
-      transparent 42px,
-      rgba(180,160,130,.35) 42px,
-      rgba(180,160,130,.35) 43px
-    );
-}
-body.dark .section-body {
-  background-color: var(--paper);
-  background-image:
-    linear-gradient(to right, transparent 52px, rgba(180,80,60,.2) 52px, rgba(180,80,60,.2) 53px, transparent 53px),
-    repeating-linear-gradient(
-      to bottom,
-      transparent,
-      transparent 42px,
-      rgba(255,255,255,.07) 42px,
-      rgba(255,255,255,.07) 43px
-    );
-}
+.section-body { background-color: var(--paper); }
 
 /* ADD AREA */
-.add-area { background: var(--paper-dark); border-top:1px dashed var(--ink-faint); }
+.add-area { background: var(--paper-dark); border-top:1px solid var(--card-border); }
 .add-input-row { display:flex; align-items:center; gap:10px; padding:10px 20px 8px; }
-.plus-icon { width:26px; height:26px; flex-shrink:0; border-radius:50%; border:2px dashed var(--ink-faint); display:flex; align-items:center; justify-content:center; color:var(--ink-faint); font-size:1rem; user-select:none; }
+.plus-icon { width:26px; height:26px; flex-shrink:0; border-radius:50%; border:2px dashed var(--ink-faint); display:flex; align-items:center; justify-content:center; color:var(--ink-faint); font-size:1rem; font-weight:700; user-select:none; transition:border-color .2s,color .2s; }
 .add-area:focus-within .plus-icon { border-color:var(--ink-light); color:var(--ink-light); }
-.add-input { flex:1; background:transparent; border:none; outline:none; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:16px; color:var(--ink); font-style:italic; padding:4px 0; }
+.add-input { flex:1; background:transparent; border:none; outline:none; font-family:'Inter',-apple-system,sans-serif; font-size:16px; color:var(--ink); padding:4px 0; }
 .add-input::placeholder { color:var(--ink-faint); }
 .add-time-drum-wrap { display:flex; align-items:center; gap:4px; flex-shrink:0; }
-.add-time-drum { position:relative; width:54px; height:26px; overflow:hidden; border:1px solid var(--ink-faint); border-radius:4px; background:var(--paper); cursor:pointer; user-select:none; }
-.add-time-drum-inner { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.72rem; color:var(--ink); font-style:italic; pointer-events:none; }
+.add-time-drum { position:relative; width:56px; height:28px; overflow:hidden; border:1px solid var(--card-border); border-radius:999px; background:var(--paper); cursor:pointer; user-select:none; }
+.add-time-drum-inner { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-family:'Inter',-apple-system,sans-serif; font-size:.72rem; color:var(--ink); pointer-events:none; }
 .add-time-drum::before,.add-time-drum::after { content:''; position:absolute; left:0; right:0; height:8px; z-index:2; pointer-events:none; }
 .add-time-drum::before { top:0; background:linear-gradient(to bottom,var(--paper),transparent); }
 .add-time-drum::after  { bottom:0; background:linear-gradient(to top,var(--paper),transparent); }
-.add-time-active-indicator { width:8px; height:8px; border-radius:50%; background:#4a5fa8; opacity:0; transition:opacity .2s; flex-shrink:0; }
+.add-time-active-indicator { width:8px; height:8px; border-radius:50%; background:#5851DB; opacity:0; transition:opacity .2s; flex-shrink:0; }
 .add-time-active-indicator.on { opacity:1; }
-.add-btn-row { display:flex; align-items:center; gap:8px; padding:0 20px 10px; flex-wrap:wrap; }
-.add-btn { color:var(--paper); border:none; border-radius:3px; padding:6px 13px; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.78rem; letter-spacing:.05em; cursor:pointer; flex-shrink:0; transition:opacity .15s,transform .1s; }
-.morning .add-btn{background:#b07a10} .midday .add-btn{background:#b83d1e} .night .add-btn{background:#4a5fa8}
-.add-btn:hover{opacity:.85;transform:translateY(-1px)} .add-btn:active{transform:translateY(0)}
-.repeat-btn,.clear-btn { border-radius:3px; padding:5px 10px; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.72rem; letter-spacing:.03em; cursor:pointer; flex-shrink:0; transition:opacity .15s,transform .1s,border-color .15s,color .15s; white-space:nowrap; background:transparent; }
+.add-btn-row { display:flex; align-items:center; gap:9px; padding:2px 20px 16px; flex-wrap:wrap; }
+.add-btn {
+  color:#fff; border:none; border-radius:999px; padding:8px 20px;
+  font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-weight:700; font-size:.8rem; letter-spacing:.02em;
+  cursor:pointer; flex-shrink:0; transition:transform .15s cubic-bezier(.34,1.5,.64,1),box-shadow .2s,filter .15s;
+}
+.morning .add-btn{ background:var(--grad-morning); box-shadow:0 4px 16px rgba(245,133,41,.35); }
+.midday  .add-btn{ background:var(--grad-midday);  box-shadow:0 4px 16px rgba(221,42,123,.35); }
+.night   .add-btn{ background:var(--grad-night);   box-shadow:0 4px 16px rgba(88,81,219,.4); }
+.add-btn:hover{ transform:translateY(-2px) scale(1.02); filter:brightness(1.08); }
+.add-btn:active{ transform:translateY(0) scale(.98); }
+.repeat-btn,.clear-btn {
+  border-radius:999px; padding:7px 16px; font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-weight:600;
+  font-size:.74rem; letter-spacing:.01em; cursor:pointer; flex-shrink:0;
+  transition:transform .15s cubic-bezier(.34,1.5,.64,1),border-color .15s,color .15s,background .15s;
+  white-space:nowrap; background:transparent;
+}
 .repeat-btn { color:var(--ink-light); border:1.5px solid var(--ink-faint); }
-.repeat-btn:hover { border-color:var(--ink-light); color:var(--ink); transform:translateY(-1px); }
-.clear-btn { color:#a03020; border:1.5px solid rgba(160,48,32,.3); }
-.clear-btn:hover { border-color:#a03020; background:rgba(160,48,32,.06); transform:translateY(-1px); }
+.repeat-btn:hover { border-color:#8134AF; color:#8134AF; transform:translateY(-2px); }
+body.dark .repeat-btn:hover { color:#B89CF0; border-color:#8134AF; }
+.clear-btn { color:var(--ig-red); border:1.5px solid rgba(237,73,86,.35); }
+.clear-btn:hover { border-color:var(--ig-red); background:rgba(237,73,86,.08); transform:translateY(-2px); }
 
 /* DRUM POPOVER */
-.drum-popover { position:fixed; z-index:9000; background:var(--paper); border:1.5px solid var(--ink-faint); border-radius:6px; box-shadow:0 8px 32px rgba(0,0,0,.2); min-width:150px; display:none; flex-direction:column; align-items:stretch; height:260px; overflow:hidden; }
+.drum-popover { position:fixed; z-index:9000; background:var(--paper); border:1px solid var(--card-border); border-radius:20px; box-shadow:0 16px 48px rgba(0,0,0,.28); min-width:150px; display:none; flex-direction:column; align-items:stretch; height:260px; overflow:hidden; }
 .drum-popover.show { display:flex; }
 .drum-popover-scroll { overflow-y:scroll; flex:1; scroll-snap-type:y mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
 .drum-popover-scroll::-webkit-scrollbar { display:none; }
-.drum-popover-item { padding:10px 18px; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.82rem; font-style:italic; color:var(--ink-light); cursor:pointer; scroll-snap-align:start; text-align:center; transition:background .1s,color .1s; }
+.drum-popover-item { padding:10px 18px; font-family:'Inter',-apple-system,sans-serif; font-size:.82rem; color:var(--ink-light); cursor:pointer; scroll-snap-align:start; text-align:center; transition:background .1s,color .1s; }
 .drum-popover-item:hover { background:var(--paper-dark); color:var(--ink); }
-.drum-popover-item.selected { color:var(--ink); font-weight:500; background:rgba(74,95,168,.09); }
+.drum-popover-item.selected { color:var(--ink); font-weight:700; background:rgba(129,52,175,.1); }
 .drum-popover::before,.drum-popover::after { content:''; position:absolute; left:0; right:0; height:28px; z-index:2; pointer-events:none; }
 .drum-popover::before { top:0; background:linear-gradient(to bottom,var(--paper),transparent); border-radius:6px 6px 0 0; }
 .drum-popover::after  { bottom:0; background:linear-gradient(to top,var(--paper),transparent); border-radius:0 0 6px 6px; }
 
 /* DRAG GHOST */
-.drag-ghost { position:fixed; top:0; left:0; pointer-events:none; z-index:8000; opacity:.88; box-shadow:0 8px 28px rgba(0,0,0,.2); border-radius:4px; background:var(--paper); display:flex; align-items:center; gap:12px; padding:11px 20px; font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.95rem; color:var(--ink); will-change:transform; }
+.drag-ghost { position:fixed; top:0; left:0; pointer-events:none; z-index:8000; opacity:.94; box-shadow:0 12px 36px rgba(0,0,0,.3),0 0 0 1.5px rgba(221,42,123,.4); border-radius:16px; background:var(--paper); display:flex; align-items:center; gap:12px; padding:11px 20px; font-family:'Inter',-apple-system,sans-serif; font-weight:500; font-size:.95rem; color:var(--ink); will-change:transform; }
 
 /* CONFIRM */
 .confirm-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:300; pointer-events:none; opacity:0; transition:opacity .2s; }
 .confirm-overlay.show { opacity:1; pointer-events:auto; }
 .confirm-backdrop { position:absolute; inset:0; background:rgba(44,36,22,.35); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); }
-.confirm-card { position:relative; background:var(--paper); border-radius:5px; box-shadow:0 16px 48px rgba(0,0,0,.18),inset 0 0 0 1px rgba(0,0,0,.05); padding:28px 28px 22px; max-width:300px; width:88%; text-align:center; transform:translateY(12px) scale(.97); transition:transform .25s cubic-bezier(.16,1,.3,1),opacity .2s; opacity:0; }
+.confirm-card { position:relative; background:var(--paper); border-radius:24px; box-shadow:0 20px 56px rgba(0,0,0,.22),0 0 0 1px var(--card-border); padding:28px 28px 22px; max-width:300px; width:88%; text-align:center; transform:translateY(12px) scale(.97); transition:transform .25s cubic-bezier(.16,1,.3,1),opacity .2s; opacity:0; }
 .confirm-overlay.show .confirm-card { transform:translateY(0) scale(1); opacity:1; }
-.confirm-title { font-family:'Playfair Display','Iowan Old Style',Georgia,serif; font-size:1.05rem; font-weight:600; color:var(--ink); margin-bottom:6px; }
-.confirm-sub { font-style:italic; font-size:.82rem; color:var(--ink-light); margin-bottom:20px; }
+.confirm-title { font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-size:1.05rem; font-weight:800; color:var(--ink); margin-bottom:6px; }
+.confirm-sub { font-size:.82rem; color:var(--ink-light); margin-bottom:20px; }
 .confirm-btns { display:flex; gap:10px; justify-content:center; }
-.confirm-yes { font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.82rem; padding:7px 20px; background:#a03020; color:white; border:none; border-radius:3px; cursor:pointer; transition:opacity .15s,transform .1s; }
+.confirm-yes { font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-weight:700; font-size:.82rem; padding:8px 22px; background:var(--ig-red); color:white; border:none; border-radius:999px; cursor:pointer; transition:transform .15s,filter .15s; box-shadow:0 4px 14px rgba(237,73,86,.35); }
 .confirm-yes:hover { opacity:.85; transform:translateY(-1px); }
-.confirm-no { font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.82rem; padding:7px 20px; background:transparent; color:var(--ink-light); border:1.5px solid var(--ink-faint); border-radius:3px; cursor:pointer; transition:border-color .15s,color .15s,transform .1s; }
+.confirm-no { font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-weight:700; font-size:.82rem; padding:8px 22px; background:transparent; color:var(--ink-light); border:1.5px solid var(--ink-faint); border-radius:999px; cursor:pointer; transition:border-color .15s,color .15s,transform .1s; }
 .confirm-no:hover { border-color:var(--ink-light); color:var(--ink); transform:translateY(-1px); }
 
 /* CELEBRATION */
 .celebration-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:200; pointer-events:none; opacity:0; transition:opacity .4s; }
 .celebration-overlay.show { opacity:1; pointer-events:auto; }
 .celebration-backdrop { position:absolute; inset:0; background:rgba(44,36,22,.45); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
-.celebration-card { position:relative; background:var(--paper); border-radius:6px; box-shadow:0 24px 80px rgba(0,0,0,.22),inset 0 0 0 1px rgba(0,0,0,.05); padding:44px 40px 36px; max-width:380px; width:90%; text-align:center; transform:translateY(24px) scale(.96); transition:transform .45s cubic-bezier(.16,1,.3,1),opacity .4s; opacity:0; }
+.celebration-card { position:relative; background:var(--paper); border-radius:28px; box-shadow:0 28px 88px rgba(0,0,0,.28),0 0 0 1px var(--card-border); padding:44px 40px 36px; max-width:380px; width:90%; text-align:center; transform:translateY(24px) scale(.96); transition:transform .45s cubic-bezier(.16,1,.3,1),opacity .4s; opacity:0; }
 .celebration-overlay.show .celebration-card { transform:translateY(0) scale(1); opacity:1; }
 .celebration-card::before { content:''; position:absolute; inset:0; border-radius:6px; background-image:repeating-linear-gradient(to bottom,transparent,transparent 31px,rgba(200,185,165,.18) 31px,rgba(200,185,165,.18) 32px); pointer-events:none; }
 .celebration-emoji { font-size:2.8rem; display:block; margin-bottom:14px; animation:bounceIn .6s cubic-bezier(.16,1,.3,1) .3s both; }
 @keyframes bounceIn { from{transform:scale(.4) rotate(-10deg);opacity:0} to{transform:scale(1) rotate(0);opacity:1} }
-.celebration-title { font-family:'Playfair Display','Iowan Old Style',Georgia,serif; font-size:1.45rem; font-weight:700; color:var(--ink); line-height:1.3; margin-bottom:8px; position:relative; }
-.celebration-sub { font-style:italic; color:var(--ink-light); font-size:.9rem; position:relative; }
+.celebration-title { font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-size:1.45rem; font-weight:800; background:var(--grad-full); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; line-height:1.3; margin-bottom:8px; position:relative; }
+.celebration-sub { color:var(--ink-light); font-size:.9rem; position:relative; }
 .confetti-canvas { position:fixed; inset:0; pointer-events:none; z-index:203; opacity:0; transition:opacity .3s; }
 .confetti-canvas.show { opacity:1; }
 
 /* TOAST */
-.toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(10px); background:var(--ink); color:var(--paper); font-family:'Lora','Iowan Old Style','Georgia',serif; font-size:.8rem; font-style:italic; padding:8px 18px; border-radius:4px; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:400; white-space:nowrap; display:flex; align-items:center; gap:12px; }
+.toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(10px); background:var(--ink); color:var(--bg); font-family:'Inter',-apple-system,sans-serif; font-weight:600; font-size:.8rem; padding:11px 20px; border-radius:999px; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:400; white-space:nowrap; display:flex; align-items:center; gap:12px; box-shadow:0 8px 28px rgba(0,0,0,.25); }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
 .toast-undo-btn { color:#e8c07a; font-style:normal; font-weight:600; text-decoration:underline; cursor:pointer; background:none; border:none; font-family:inherit; font-size:inherit; padding:0; -webkit-tap-highlight-color:transparent; }
-.milestone-toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.85); background:var(--paper); border:1.5px solid rgba(224,168,56,.4); box-shadow:0 12px 48px rgba(0,0,0,.18); border-radius:6px; padding:24px 28px 20px; text-align:center; z-index:250; pointer-events:none; opacity:0; max-width:280px; width:85%; transition:opacity .3s,transform .4s cubic-bezier(.16,1,.3,1); }
+.milestone-toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.85); background:var(--paper); border:1.5px solid rgba(245,133,41,.4); box-shadow:0 16px 56px rgba(0,0,0,.24); border-radius:24px; padding:24px 28px 20px; text-align:center; z-index:250; pointer-events:none; opacity:0; max-width:280px; width:85%; transition:opacity .3s,transform .4s cubic-bezier(.16,1,.3,1); }
 .milestone-toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
 .milestone-fire { font-size:2.4rem; display:block; margin-bottom:8px; animation:fireWiggle .5s ease-in-out infinite alternate; }
 @keyframes fireWiggle { from{transform:rotate(-10deg) scale(1)} to{transform:rotate(10deg) scale(1.12)} }
-.milestone-text { font-family:'Playfair Display','Iowan Old Style',Georgia,serif; font-size:1rem; font-weight:600; color:var(--ink); line-height:1.4; }
-.milestone-sub { font-style:italic; font-size:.8rem; color:var(--ink-light); margin-top:4px; }
+.milestone-text { font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-size:1rem; font-weight:600; color:var(--ink); line-height:1.4; }
+.milestone-sub { font-size:.8rem; color:var(--ink-light); margin-top:4px; }
+
+/* HEADER ICON BUTTONS (calendar / account) */
+.header-icon-btn {
+  width:34px; height:34px; flex-shrink:0; border-radius:50%; border:1.5px solid var(--card-border);
+  background:var(--paper-dark); color:var(--ink-light); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; padding:0; transition:transform .15s,border-color .15s,color .15s; outline:none;
+}
+.header-icon-btn:hover { border-color:#8134AF; color:#8134AF; transform:translateY(-1px); }
+.header-icon-btn svg { width:17px; height:17px; stroke:currentColor; stroke-width:2; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+
+/* AUTH SCREEN */
+.auth-overlay {
+  position:fixed; inset:0; z-index:10000; background:var(--bg);
+  background-image: radial-gradient(ellipse at 20% 15%, rgba(245,133,41,.14) 0%, transparent 55%),
+                     radial-gradient(ellipse at 80% 85%, rgba(88,81,219,.16) 0%, transparent 55%);
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+.auth-overlay.hidden { display:none; }
+.auth-card { width:100%; max-width:340px; }
+.auth-title {
+  font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-weight:800; font-size:2.1rem; text-align:center;
+  background:var(--grad-full); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  margin-bottom:6px;
+}
+.auth-subtitle { text-align:center; color:var(--ink-light); font-weight:500; font-size:.9rem; margin-bottom:28px; }
+.auth-field { margin-bottom:12px; }
+.auth-field input {
+  width:100%; padding:13px 16px; border-radius:14px; border:1.5px solid var(--card-border);
+  background:var(--paper); color:var(--ink); font-family:'Inter',-apple-system,sans-serif; font-size:16px; outline:none;
+  transition:border-color .15s;
+}
+.auth-field input:focus { border-color:#8134AF; }
+.auth-submit-btn {
+  width:100%; margin-top:6px; padding:13px; border:none; border-radius:999px; color:#fff;
+  font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-weight:700; font-size:.95rem;
+  background:var(--grad-full); box-shadow:0 6px 20px rgba(221,42,123,.35); cursor:pointer;
+  transition:transform .15s,filter .15s;
+}
+.auth-submit-btn:hover { transform:translateY(-2px); filter:brightness(1.06); }
+.auth-submit-btn:disabled { opacity:.6; transform:none; cursor:default; }
+.auth-toggle-mode-btn {
+  display:block; width:100%; text-align:center; margin-top:16px; background:none; border:none; cursor:pointer;
+  color:var(--ink-light); font-family:'Inter',-apple-system,sans-serif; font-weight:600; font-size:.84rem;
+}
+.auth-toggle-mode-btn span { color:#DD2A7B; text-decoration:underline; }
+.auth-error { color:var(--ig-red); font-size:.82rem; font-weight:600; text-align:center; margin-top:14px; min-height:1em; }
+.auth-loading { text-align:center; color:var(--ink-light); font-weight:600; font-size:.9rem; }
+
+/* HISTORY OVERLAY */
+.history-overlay {
+  position:fixed; inset:0; z-index:6000; background:var(--bg); transform:translateY(100%);
+  transition:transform .35s cubic-bezier(.25,.46,.45,.94); overflow-y:auto; -webkit-overflow-scrolling:touch;
+}
+.history-overlay.show { transform:translateY(0); }
+#page-history { padding:32px 20px 80px; min-height:100%; width:100%; height:auto; overflow:visible; }
+.history-topbar { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.history-back-btn {
+  display:flex; align-items:center; gap:4px; background:var(--paper-dark); border:1.5px solid var(--card-border);
+  color:var(--ink-light); border-radius:999px; padding:7px 15px 7px 12px; font-family:'Plus Jakarta Sans',-apple-system,sans-serif;
+  font-weight:700; font-size:.8rem; cursor:pointer; transition:border-color .15s,color .15s;
+}
+.history-back-btn:hover { border-color:#8134AF; color:#8134AF; }
+.history-date-label { font-size:.76rem; font-weight:600; color:var(--ink-faint); letter-spacing:.06em; text-transform:uppercase; }
+
+/* CALENDAR POPOVER */
+.calendar-popover {
+  position:fixed; z-index:9000; background:var(--paper); border:1px solid var(--card-border); border-radius:22px;
+  box-shadow:0 20px 56px rgba(0,0,0,.3); width:300px; padding:16px; display:none;
+}
+.calendar-popover.show { display:block; }
+.calendar-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.calendar-nav-btn {
+  width:28px; height:28px; border-radius:50%; border:none; background:var(--paper-dark); color:var(--ink-light);
+  cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:700;
+}
+.calendar-nav-btn:hover { color:#8134AF; }
+.calendar-month-label { font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-weight:700; font-size:.9rem; color:var(--ink); }
+.calendar-weekdays { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:4px; }
+.calendar-weekdays span { text-align:center; font-size:.65rem; font-weight:700; color:var(--ink-faint); text-transform:uppercase; }
+.calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.calendar-day {
+  aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center; border-radius:10px;
+  background:none; border:none; color:var(--ink); font-family:'Inter',-apple-system,sans-serif; font-size:.8rem; font-weight:600;
+  cursor:pointer; position:relative;
+}
+.calendar-day:hover { background:var(--paper-dark); }
+.calendar-day.other-month { color:var(--ink-faint); opacity:.4; }
+.calendar-day.today { color:#DD2A7B; font-weight:800; }
+.calendar-day.has-data::after { content:''; position:absolute; bottom:4px; width:4px; height:4px; border-radius:50%; background:var(--grad-full); }
+.calendar-backdrop { position:fixed; inset:0; z-index:8999; }
 
 /* DARK FIXES */
-body.dark .section-card::before { background:rgba(255,255,255,.06); }
-body.dark .morning .section-header { border-bottom-color:rgba(232,168,56,.2); }
-body.dark .midday  .section-header { border-bottom-color:rgba(224,92,58,.15); }
-body.dark .night   .section-header { border-bottom-color:rgba(74,95,168,.2); }
-body.dark .celebration-card,.confirm-card { background:#1e1b16; }
-body.dark .celebration-title,.confirm-title { color:#e8dfd0; }
-body.dark .drum-popover { background:#1e1b16; }
+body.dark .morning .section-header { border-bottom-color:rgba(245,133,41,.22); }
+body.dark .midday  .section-header { border-bottom-color:rgba(221,42,123,.22); }
+body.dark .night   .section-header { border-bottom-color:rgba(88,81,219,.25); }
+body.dark .celebration-card,.confirm-card { background:#16121f; }
+body.dark .confirm-title { color:#f5f2fb; }
+body.dark .drum-popover { background:#16121f; }
 body.dark .drum-popover-item:hover { background:#171410; }
-body.dark .drum-popover-item.selected { background:rgba(74,95,168,.15); }
-body.dark .todo-item-inner,.drag-ghost { background:#1e1b16; }
+body.dark .drum-popover-item.selected { background:rgba(139,135,245,.18); }
+body.dark .todo-item-inner,.drag-ghost { background:#16121f; }
 </style>
 </head>
 <body>
+
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-card">
+    <h1 class="auth-title">Daily To-Do</h1>
+    <p class="auth-subtitle" id="auth-subtitle">Sign in to sync your lists</p>
+    <div class="auth-field"><input type="email" id="auth-email" placeholder="Email" autocomplete="email" autocapitalize="off"/></div>
+    <div class="auth-field"><input type="password" id="auth-password" placeholder="Password" autocomplete="current-password"/></div>
+    <button class="auth-submit-btn" id="auth-submit-btn">Sign In</button>
+    <button class="auth-toggle-mode-btn" id="auth-toggle-mode-btn">Don't have an account? <span>Sign up</span></button>
+    <p class="auth-error" id="auth-error"></p>
+  </div>
+</div>
 
 <div class="pages-container" id="pages-container">
 
@@ -315,17 +433,17 @@ body.dark .todo-item-inner,.drag-ghost { background:#1e1b16; }
   <div class="sections-wrapper">
     <div class="section-card morning" id="card-yesterday-morning"><div class="drop-zone">Drop here</div>
       <div class="section-header"><span class="section-title">Morning</span><span class="section-count" id="count-yesterday-morning"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-yesterday-morning"><div class="deadline-drum-inner" id="deadline-label-yesterday-morning">—</div></div></div></div>
-      <div class="section-body"><ul class="todo-list" id="list-yesterday-morning"></ul><p class="empty-msg" id="empty-yesterday-morning">Add a morning task</p></div>
+      <div class="story-bar" id="storybar-yesterday-morning"></div><div class="section-body"><ul class="todo-list" id="list-yesterday-morning"></ul><p class="empty-msg" id="empty-yesterday-morning">Add a morning task</p></div>
       <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-yesterday-morning" type="text" placeholder="Add a morning task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-yesterday-morning"><div class="add-time-drum-inner" id="addtime-label-yesterday-morning">time</div></div><div class="add-time-active-indicator" id="addtime-dot-yesterday-morning"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-yesterday-morning">Add</button><button class="clear-btn" id="clear-btn-yesterday-morning">Clear All</button></div></div>
     </div>
     <div class="section-card midday" id="card-yesterday-midday"><div class="drop-zone">Drop here</div>
       <div class="section-header"><span class="section-title">Mid-Day</span><span class="section-count" id="count-yesterday-midday"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-yesterday-midday"><div class="deadline-drum-inner" id="deadline-label-yesterday-midday">—</div></div></div></div>
-      <div class="section-body"><ul class="todo-list" id="list-yesterday-midday"></ul><p class="empty-msg" id="empty-yesterday-midday">Add a mid-day task</p></div>
+      <div class="story-bar" id="storybar-yesterday-midday"></div><div class="section-body"><ul class="todo-list" id="list-yesterday-midday"></ul><p class="empty-msg" id="empty-yesterday-midday">Add a mid-day task</p></div>
       <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-yesterday-midday" type="text" placeholder="Add a mid-day task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-yesterday-midday"><div class="add-time-drum-inner" id="addtime-label-yesterday-midday">time</div></div><div class="add-time-active-indicator" id="addtime-dot-yesterday-midday"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-yesterday-midday">Add</button><button class="clear-btn" id="clear-btn-yesterday-midday">Clear All</button></div></div>
     </div>
     <div class="section-card night" id="card-yesterday-night"><div class="drop-zone">Drop here</div>
       <div class="section-header"><span class="section-title">Night</span><span class="section-count" id="count-yesterday-night"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-yesterday-night"><div class="deadline-drum-inner" id="deadline-label-yesterday-night">—</div></div></div></div>
-      <div class="section-body"><ul class="todo-list" id="list-yesterday-night"></ul><p class="empty-msg" id="empty-yesterday-night">Add a night task</p></div>
+      <div class="story-bar" id="storybar-yesterday-night"></div><div class="section-body"><ul class="todo-list" id="list-yesterday-night"></ul><p class="empty-msg" id="empty-yesterday-night">Add a night task</p></div>
       <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-yesterday-night" type="text" placeholder="Add a night task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-yesterday-night"><div class="add-time-drum-inner" id="addtime-label-yesterday-night">time</div></div><div class="add-time-active-indicator" id="addtime-dot-yesterday-night"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-yesterday-night">Add</button><button class="clear-btn" id="clear-btn-yesterday-night">Clear All</button></div></div>
     </div>
   </div>
@@ -337,24 +455,29 @@ body.dark .todo-item-inner,.drag-ghost { background:#1e1b16; }
     <div class="page-dot" data-page="0"></div><div class="page-dot active" data-page="1"></div><div class="page-dot" data-page="2"></div>
   </div>
   <header class="page-header">
-    <div class="date-row"><span class="date-line" id="date-today"></span><button class="theme-toggle-small" id="theme-toggle" aria-label="Toggle dark mode"><span class="theme-knob-small" id="theme-knob">☀️</span></button></div>
+    <div class="date-row">
+      <button class="header-icon-btn" id="calendar-btn" aria-label="Open calendar"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg></button>
+      <span class="date-line" id="date-today"></span>
+      <button class="theme-toggle-small" id="theme-toggle" aria-label="Toggle dark mode"><span class="theme-knob-small" id="theme-knob">☀️</span></button>
+      <button class="header-icon-btn" id="signout-btn" aria-label="Sign out"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+    </div>
     <h1>Daily To-Do</h1>
   </header>
   <p class="swipe-hint">← yesterday &nbsp;&nbsp; tomorrow →</p>
   <div class="sections-wrapper">
     <div class="section-card morning" id="card-today-morning"><div class="drop-zone">Drop here</div>
       <div class="section-header"><span class="section-title">Morning</span><span class="section-count" id="count-today-morning"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-today-morning"><div class="deadline-drum-inner" id="deadline-label-today-morning">—</div></div></div></div>
-      <div class="section-body"><ul class="todo-list" id="list-today-morning"></ul><p class="empty-msg" id="empty-today-morning">Add your first morning task</p></div>
+      <div class="story-bar" id="storybar-today-morning"></div><div class="section-body"><ul class="todo-list" id="list-today-morning"></ul><p class="empty-msg" id="empty-today-morning">Add your first morning task</p></div>
       <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-today-morning" type="text" placeholder="Add a morning task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-today-morning"><div class="add-time-drum-inner" id="addtime-label-today-morning">time</div></div><div class="add-time-active-indicator" id="addtime-dot-today-morning"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-today-morning">Add</button><button class="repeat-btn" id="repeat-btn-today-morning">↺ Yesterday's</button><button class="clear-btn" id="clear-btn-today-morning">Clear All</button></div></div>
     </div>
     <div class="section-card midday" id="card-today-midday"><div class="drop-zone">Drop here</div>
       <div class="section-header"><span class="section-title">Mid-Day</span><span class="section-count" id="count-today-midday"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-today-midday"><div class="deadline-drum-inner" id="deadline-label-today-midday">—</div></div></div></div>
-      <div class="section-body"><ul class="todo-list" id="list-today-midday"></ul><p class="empty-msg" id="empty-today-midday">Add your first mid-day task</p></div>
+      <div class="story-bar" id="storybar-today-midday"></div><div class="section-body"><ul class="todo-list" id="list-today-midday"></ul><p class="empty-msg" id="empty-today-midday">Add your first mid-day task</p></div>
       <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-today-midday" type="text" placeholder="Add a mid-day task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-today-midday"><div class="add-time-drum-inner" id="addtime-label-today-midday">time</div></div><div class="add-time-active-indicator" id="addtime-dot-today-midday"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-today-midday">Add</button><button class="repeat-btn" id="repeat-btn-today-midday">↺ Yesterday's</button><button class="clear-btn" id="clear-btn-today-midday">Clear All</button></div></div>
     </div>
     <div class="section-card night" id="card-today-night"><div class="drop-zone">Drop here</div>
       <div class="section-header"><span class="section-title">Night</span><span class="section-count" id="count-today-night"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-today-night"><div class="deadline-drum-inner" id="deadline-label-today-night">—</div></div></div></div>
-      <div class="section-body"><ul class="todo-list" id="list-today-night"></ul><p class="empty-msg" id="empty-today-night">Add your first night task</p></div>
+      <div class="story-bar" id="storybar-today-night"></div><div class="section-body"><ul class="todo-list" id="list-today-night"></ul><p class="empty-msg" id="empty-today-night">Add your first night task</p></div>
       <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-today-night" type="text" placeholder="Add a night task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-today-night"><div class="add-time-drum-inner" id="addtime-label-today-night">time</div></div><div class="add-time-active-indicator" id="addtime-dot-today-night"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-today-night">Add</button><button class="repeat-btn" id="repeat-btn-today-night">↺ Yesterday's</button><button class="clear-btn" id="clear-btn-today-night">Clear All</button></div></div>
     </div>
   </div>
@@ -373,23 +496,63 @@ body.dark .todo-item-inner,.drag-ghost { background:#1e1b16; }
   <div class="sections-wrapper">
     <div class="section-card morning" id="card-tomorrow-morning"><div class="drop-zone">Drop here</div>
       <div class="section-header"><span class="section-title">Morning</span><span class="section-count" id="count-tomorrow-morning"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-tomorrow-morning"><div class="deadline-drum-inner" id="deadline-label-tomorrow-morning">—</div></div></div></div>
-      <div class="section-body"><ul class="todo-list" id="list-tomorrow-morning"></ul><p class="empty-msg" id="empty-tomorrow-morning">Plan your morning</p></div>
+      <div class="story-bar" id="storybar-tomorrow-morning"></div><div class="section-body"><ul class="todo-list" id="list-tomorrow-morning"></ul><p class="empty-msg" id="empty-tomorrow-morning">Plan your morning</p></div>
       <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-tomorrow-morning" type="text" placeholder="Plan a morning task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-tomorrow-morning"><div class="add-time-drum-inner" id="addtime-label-tomorrow-morning">time</div></div><div class="add-time-active-indicator" id="addtime-dot-tomorrow-morning"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-tomorrow-morning">Add</button><button class="repeat-btn" id="pull-btn-tomorrow-morning">↺ Today's</button><button class="clear-btn" id="clear-btn-tomorrow-morning">Clear All</button></div></div>
     </div>
     <div class="section-card midday" id="card-tomorrow-midday"><div class="drop-zone">Drop here</div>
       <div class="section-header"><span class="section-title">Mid-Day</span><span class="section-count" id="count-tomorrow-midday"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-tomorrow-midday"><div class="deadline-drum-inner" id="deadline-label-tomorrow-midday">—</div></div></div></div>
-      <div class="section-body"><ul class="todo-list" id="list-tomorrow-midday"></ul><p class="empty-msg" id="empty-tomorrow-midday">Plan your mid-day</p></div>
+      <div class="story-bar" id="storybar-tomorrow-midday"></div><div class="section-body"><ul class="todo-list" id="list-tomorrow-midday"></ul><p class="empty-msg" id="empty-tomorrow-midday">Plan your mid-day</p></div>
       <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-tomorrow-midday" type="text" placeholder="Plan a mid-day task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-tomorrow-midday"><div class="add-time-drum-inner" id="addtime-label-tomorrow-midday">time</div></div><div class="add-time-active-indicator" id="addtime-dot-tomorrow-midday"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-tomorrow-midday">Add</button><button class="repeat-btn" id="pull-btn-tomorrow-midday">↺ Today's</button><button class="clear-btn" id="clear-btn-tomorrow-midday">Clear All</button></div></div>
     </div>
     <div class="section-card night" id="card-tomorrow-night"><div class="drop-zone">Drop here</div>
       <div class="section-header"><span class="section-title">Night</span><span class="section-count" id="count-tomorrow-night"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-tomorrow-night"><div class="deadline-drum-inner" id="deadline-label-tomorrow-night">—</div></div></div></div>
-      <div class="section-body"><ul class="todo-list" id="list-tomorrow-night"></ul><p class="empty-msg" id="empty-tomorrow-night">Plan your night</p></div>
+      <div class="story-bar" id="storybar-tomorrow-night"></div><div class="section-body"><ul class="todo-list" id="list-tomorrow-night"></ul><p class="empty-msg" id="empty-tomorrow-night">Plan your night</p></div>
       <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-tomorrow-night" type="text" placeholder="Plan a night task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-tomorrow-night"><div class="add-time-drum-inner" id="addtime-label-tomorrow-night">time</div></div><div class="add-time-active-indicator" id="addtime-dot-tomorrow-night"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-tomorrow-night">Add</button><button class="repeat-btn" id="pull-btn-tomorrow-night">↺ Today's</button><button class="clear-btn" id="clear-btn-tomorrow-night">Clear All</button></div></div>
     </div>
   </div>
 </div>
 
 </div><!-- /pages-container -->
+
+<div class="calendar-backdrop" id="calendar-backdrop" style="display:none;"></div>
+<div class="calendar-popover" id="calendar-popover">
+  <div class="calendar-header">
+    <button class="calendar-nav-btn" id="cal-prev">‹</button>
+    <span class="calendar-month-label" id="cal-month-label"></span>
+    <button class="calendar-nav-btn" id="cal-next">›</button>
+  </div>
+  <div class="calendar-weekdays"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>
+  <div class="calendar-grid" id="calendar-grid"></div>
+</div>
+
+<div class="history-overlay" id="history-overlay">
+  <div class="page" id="page-history">
+    <div class="history-topbar">
+      <button class="history-back-btn" id="history-back-btn">‹ Today</button>
+      <span class="history-date-label" id="date-history"></span>
+    </div>
+    <header class="page-header">
+      <h1 id="history-title">History</h1>
+    </header>
+    <div class="sections-wrapper">
+      <div class="section-card morning" id="card-history-morning">
+        <div class="section-header"><span class="section-title">Morning</span><span class="section-count" id="count-history-morning"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-history-morning"><div class="deadline-drum-inner" id="deadline-label-history-morning">—</div></div></div></div>
+        <div class="story-bar" id="storybar-history-morning"></div><div class="section-body"><ul class="todo-list" id="list-history-morning"></ul><p class="empty-msg" id="empty-history-morning">Add a morning task</p></div>
+        <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-history-morning" type="text" placeholder="Add a morning task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-history-morning"><div class="add-time-drum-inner" id="addtime-label-history-morning">time</div></div><div class="add-time-active-indicator" id="addtime-dot-history-morning"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-history-morning">Add</button><button class="clear-btn" id="clear-btn-history-morning">Clear All</button></div></div>
+      </div>
+      <div class="section-card midday" id="card-history-midday">
+        <div class="section-header"><span class="section-title">Mid-Day</span><span class="section-count" id="count-history-midday"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-history-midday"><div class="deadline-drum-inner" id="deadline-label-history-midday">—</div></div></div></div>
+        <div class="story-bar" id="storybar-history-midday"></div><div class="section-body"><ul class="todo-list" id="list-history-midday"></ul><p class="empty-msg" id="empty-history-midday">Add a mid-day task</p></div>
+        <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-history-midday" type="text" placeholder="Add a mid-day task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-history-midday"><div class="add-time-drum-inner" id="addtime-label-history-midday">time</div></div><div class="add-time-active-indicator" id="addtime-dot-history-midday"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-history-midday">Add</button><button class="clear-btn" id="clear-btn-history-midday">Clear All</button></div></div>
+      </div>
+      <div class="section-card night" id="card-history-night">
+        <div class="section-header"><span class="section-title">Night</span><span class="section-count" id="count-history-night"></span><div class="section-deadline-wrap"><span class="section-deadline-label">by</span><div class="deadline-drum" id="deadline-history-night"><div class="deadline-drum-inner" id="deadline-label-history-night">—</div></div></div></div>
+        <div class="story-bar" id="storybar-history-night"></div><div class="section-body"><ul class="todo-list" id="list-history-night"></ul><p class="empty-msg" id="empty-history-night">Add a night task</p></div>
+        <div class="add-area"><div class="add-input-row"><span class="plus-icon">+</span><input class="add-input" id="input-history-night" type="text" placeholder="Add a night task…"/><div class="add-time-drum-wrap"><div class="add-time-drum" id="addtime-history-night"><div class="add-time-drum-inner" id="addtime-label-history-night">time</div></div><div class="add-time-active-indicator" id="addtime-dot-history-night"></div></div></div><div class="add-btn-row"><button class="add-btn" id="add-btn-history-night">Add</button><button class="clear-btn" id="clear-btn-history-night">Clear All</button></div></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <canvas class="confetti-canvas" id="confetti-canvas"></canvas>
 <div class="celebration-overlay" id="celebration-overlay">
@@ -422,10 +585,25 @@ const SECTIONS  = ['morning','midday','night'];
 const ALL_PAGES = ['yesterday','today','tomorrow'];
 const PAGE_OFFSETS = {yesterday:-1, today:0, tomorrow:1};
 
-const state = {yesterday:{morning:[],midday:[],night:[]},today:{morning:[],midday:[],night:[]},tomorrow:{morning:[],midday:[],night:[]}};
-const deadlines = {yesterday:{morning:null,midday:null,night:null},today:{morning:null,midday:null,night:null},tomorrow:{morning:null,midday:null,night:null}};
-const addTimeDraft = {yesterday:{morning:null,midday:null,night:null},today:{morning:null,midday:null,night:null},tomorrow:{morning:null,midday:null,night:null}};
+const state = {yesterday:{morning:[],midday:[],night:[]},today:{morning:[],midday:[],night:[]},tomorrow:{morning:[],midday:[],night:[]},history:{morning:[],midday:[],night:[]}};
+const deadlines = {yesterday:{morning:null,midday:null,night:null},today:{morning:null,midday:null,night:null},tomorrow:{morning:null,midday:null,night:null},history:{morning:null,midday:null,night:null}};
+const addTimeDraft = {yesterday:{morning:null,midday:null,night:null},today:{morning:null,midday:null,night:null},tomorrow:{morning:null,midday:null,night:null},history:{morning:null,midday:null,night:null}};
 let idCounter=0;
+let historyDate=null; // 'YYYY-MM-DD' currently shown in the history overlay
+
+/* ═══════════════════════════════════════════════════════════════
+   SUPABASE — fill these in from your project's Settings → API page.
+   The anon key is safe to ship client-side; Row Level Security on
+   the daily_lists table is what actually keeps everyone's data private.
+═══════════════════════════════════════════════════════════════ */
+const SUPABASE_URL='https://zgjasvtlpdaqnxvxynig.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_eX0t656vvYzlVbfi5Rwjrg_WavQr_GQ';
+if(!window.supabase){
+  document.body.innerHTML='<div style="padding:60px 24px;text-align:center;font-family:-apple-system,sans-serif;color:#a89bc2;background:#09070d;min-height:100vh;">Couldn\'t load the required library.<br>Check your connection and reload.</div>';
+  throw new Error('Supabase JS failed to load from CDN');
+}
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let currentUser=null;
 
 function generateTimes(){
   const t=['—'];
@@ -500,13 +678,13 @@ document.querySelectorAll('.page-dot').forEach(d=>d.addEventListener('click',()=
 const S=56,CR=11;
 const animMap=new Map();
 function drawIdle(ctx){const c=S/2;ctx.clearRect(0,0,S,S);ctx.beginPath();ctx.arc(c,c,CR,0,Math.PI*2);ctx.strokeStyle=document.body.classList.contains('dark')?'#4a4035':'#c8bfaf';ctx.lineWidth=2.5;ctx.stroke();}
-function drawDone(ctx){const c=S/2;ctx.clearRect(0,0,S,S);ctx.beginPath();ctx.arc(c,c,CR,0,Math.PI*2);ctx.fillStyle='#3a9e6a';ctx.fill();ctx.beginPath();ctx.moveTo(c-5,c);ctx.lineTo(c-1,c+4);ctx.lineTo(c+5,c-4);ctx.strokeStyle='white';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();}
-const BC=['#3a9e6a','#52c48a','#e05c3a','#c0392b','#8e44ad','#a855f7','#2d7a52','#e74c3c','#9b59b6'];
+function drawDone(ctx,section){const c=S/2;ctx.clearRect(0,0,S,S);ctx.beginPath();ctx.arc(c,c,CR,0,Math.PI*2);ctx.fillStyle='#3a9e6a';ctx.fill();ctx.beginPath();ctx.moveTo(c-5,c);ctx.lineTo(c-1,c+4);ctx.lineTo(c+5,c-4);ctx.strokeStyle='white';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();}
+const BC=['#FEDA75','#F58529','#DD2A7B','#8134AF','#5851DB','#FF5C9E','#8B87F5','#F1544A','#C1268F'];
 function eOut(t){return 1-Math.pow(1-t,3);}
 function eOutB(t){const c=1.70158,c3=c+1;return 1+c3*Math.pow(t-1,3)+c*Math.pow(t-1,2);}
 function cancelAnim(k){if(animMap.has(k)){cancelAnimationFrame(animMap.get(k));animMap.delete(k);}}
-function mkCanvas(k,done){const c=document.createElement('canvas');c.width=S;c.height=S;done?drawDone(c.getContext('2d')):drawIdle(c.getContext('2d'));return c;}
-function animateTo(k,canvas,_fd,toDone,dur,cb){
+function mkCanvas(k,done,section){const c=document.createElement('canvas');c.width=S;c.height=S;done?drawDone(c.getContext('2d'),section):drawIdle(c.getContext('2d'));return c;}
+function animateTo(k,canvas,_fd,toDone,dur,cb,section){
   cancelAnim(k);const ctx=canvas.getContext('2d'),cx=S/2,cy=S/2,st=performance.now();
   if(!toDone){
     function uf(now){const t=Math.min((now-st)/dur,1);ctx.clearRect(0,0,S,S);const r=(S/2-2)*(1-t);if(r>0){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle=`rgba(58,158,106,${1-t})`;ctx.fill();}ctx.globalAlpha=t;drawIdle(ctx);ctx.globalAlpha=1;if(t<1)animMap.set(k,requestAnimationFrame(uf));else{animMap.delete(k);drawIdle(ctx);if(cb)cb();}}
@@ -523,7 +701,7 @@ function animateTo(k,canvas,_fd,toDone,dur,cb){
       ring.forEach((p,i)=>{const t=Math.min(Math.max((pT-i*.02),0)/.98,1);if(t<=0)return;const d=(S*.42)*eOutB(t),px=cx+Math.cos(p.angle)*d,py=cy+Math.sin(p.angle)*d,al=t<.75?1:1-(t-.75)/.25;ctx.save();ctx.globalAlpha=al*.9;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(px,py,2.2,0,Math.PI*2);ctx.fill();ctx.restore();});
     }
     const ce=eOutB(cT);if(cT>0){ctx.save();ctx.translate(cx,cy);ctx.scale(ce,ce);ctx.translate(-cx,-cy);ctx.beginPath();ctx.arc(cx,cy,CR,0,Math.PI*2);ctx.fillStyle='#3a9e6a';ctx.fill();if(cT>.5){const ca=(cT-.5)/.5;ctx.beginPath();ctx.moveTo(cx-5,cy);ctx.lineTo(cx-1,cy+4);ctx.lineTo(cx+5,cy-4);ctx.strokeStyle=`rgba(255,255,255,${ca})`;ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();}ctx.restore();}
-    if(raw<1)animMap.set(k,requestAnimationFrame(fr));else{animMap.delete(k);drawDone(ctx);if(cb)cb();}
+    if(raw<1)animMap.set(k,requestAnimationFrame(fr));else{animMap.delete(k);drawDone(ctx,section);if(cb)cb();}
   }
   animMap.set(k,requestAnimationFrame(fr));
 }
@@ -543,6 +721,13 @@ function showDrumPopover(anchor, current, options, onSelect){
     return;
   }
 
+  // Always fully tear down any previously-open popover (and its backdrop)
+  // before opening a new one. Without this, tapping from one time-drum to
+  // another while a picker was already open left the old full-screen
+  // backdrop behind — it would silently swallow every tap afterward,
+  // including taps meant to focus a text input, blocking the keyboard.
+  closeDrumPopover();
+
   // Always rebuild fresh
   pop.innerHTML='';
 
@@ -552,10 +737,10 @@ function showDrumPopover(anchor, current, options, onSelect){
   const typeInp=document.createElement('input');
   typeInp.type='text';
   typeInp.placeholder='type time…';
-  typeInp.style.cssText='flex:1;min-width:0;font-family:"Lora","Iowan Old Style","Georgia",serif;font-size:16px;font-style:italic;color:var(--ink);background:transparent;border:none;outline:none;';
+  typeInp.style.cssText='flex:1;min-width:0;font-family:"Inter",-apple-system,sans-serif;font-size:16px;color:var(--ink);background:transparent;border:none;outline:none;';
   const typeBtn=document.createElement('button');
   typeBtn.textContent='Set';
-  typeBtn.style.cssText='font-family:"Lora","Iowan Old Style","Georgia",serif;font-size:.72rem;padding:3px 9px;background:var(--ink-light);color:var(--paper);border:none;border-radius:3px;cursor:pointer;flex-shrink:0;white-space:nowrap;';
+  typeBtn.style.cssText='font-family:"Inter",-apple-system,sans-serif;font-size:.72rem;padding:3px 9px;background:var(--ink-light);color:var(--paper);border:none;border-radius:3px;cursor:pointer;flex-shrink:0;white-space:nowrap;';
   function commitType(){const v=typeInp.value.trim();if(v){onSelect(v);closeDrumPopover();}}
   typeBtn.addEventListener('mousedown',e=>{e.preventDefault();e.stopPropagation();commitType();});
   typeInp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitType();}if(e.key==='Escape')closeDrumPopover();});
@@ -639,10 +824,12 @@ function showDrumPopover(anchor, current, options, onSelect){
 }
 function closeDrumPopover(){
   const pop=document.getElementById('drum-popover');
-  const bd=document.getElementById('drum-backdrop');
   pop.classList.remove('show');
   pop.innerHTML='';
-  if(bd)bd.remove();
+  // Remove every stray backdrop, not just one — duplicates from a
+  // previous bug (or race) could otherwise sit on top of the whole
+  // screen forever, blocking all taps including input focus.
+  document.querySelectorAll('#drum-backdrop').forEach(el=>el.remove());
   activeDrumAnchor=null;
   activeDrumCallback=null;
 }
@@ -683,6 +870,18 @@ function updateCount(page,section){
   const items=state[page][section],done=items.filter(i=>i.done).length;
   const el=document.getElementById(`count-${page}-${section}`);
   if(el)el.textContent=items.length?`${done} / ${items.length} done`:'';
+
+  // Instagram Stories-style segmented bar: one segment per task, filled as it's done
+  const bar=document.getElementById(`storybar-${page}-${section}`);
+  if(bar){
+    if(!items.length){
+      bar.innerHTML='';
+      bar.classList.add('empty');
+    } else {
+      bar.classList.remove('empty');
+      bar.innerHTML=items.map(i=>`<span class="story-segment${i.done?' filled':''}"></span>`).join('');
+    }
+  }
 }
 function render(page,section){
   const lEl=document.getElementById(`list-${page}-${section}`);
@@ -702,7 +901,7 @@ function render(page,section){
 
     const inner=document.createElement('div');inner.className='todo-item-inner';
 
-    const btn=document.createElement('button');btn.className='check-btn';btn.appendChild(mkCanvas(key,item.done));
+    const btn=document.createElement('button');btn.className='check-btn';btn.appendChild(mkCanvas(key,item.done,section));
     btn.addEventListener('click',e=>{e.stopPropagation();toggleDone(page,section,item.id,li);});
 
     const txt=document.createElement('span');txt.className='todo-text'+(item.done?' strikethrough':'');txt.textContent=item.text;
@@ -930,7 +1129,7 @@ function startDrag(li,inner,page,section,id,x,y){
   ghost.style.cssText=`width:${r.width}px;transform:translate3d(${r.left}px,${r.top}px,0);`;
   const item=state[page][section].find(i=>i.id===id);
   if(item){
-    const c=mkCanvas(`gh-${id}`,item.done);
+    const c=mkCanvas(`gh-${id}`,item.done,section);
     ghost.appendChild(c);
     const s=document.createElement('span');s.textContent=item.text;ghost.appendChild(s);
   }
@@ -1075,7 +1274,8 @@ function moveTask(fp,fs,id,tp,ts,insertIdx){
   target.splice(ti,0,task);
   render(fp,fs);render(tp,ts);
   saveState(fp);if(tp!==fp)saveState(tp);
-  showToast(`Moved to ${tp==='today'?"today's":tp==="tomorrow"?"tomorrow's":"yesterday's"} ${ts}`);
+  const pageLabel=tp==='today'?"today's":tp==='tomorrow'?"tomorrow's":tp==='history'?"this day's":"yesterday's";
+  showToast(`Moved to ${pageLabel} ${ts}`);
 }
 
 function reorderSection(page,section,id,insertIdx){
@@ -1098,7 +1298,7 @@ function toggleDone(page,section,id,li){
   const key=`${page}-${section}-${id}`,canvas=li.querySelector('.check-btn canvas'),txt=li.querySelector('.todo-text');
   item.done=!item.done;txt.classList.toggle('strikethrough',item.done);updateCount(page,section);saveState(page);
   if(item.done&&page==='today'){checkAllDone();if(item.streak&&item.streak>=2&&item.streak%7===0)setTimeout(()=>showMilestone(item.text,item.streak),700);}
-  item.done?animateTo(key,canvas,false,true,950,null):animateTo(key,canvas,true,false,500,null);
+  item.done?animateTo(key,canvas,false,true,950,null,section):animateTo(key,canvas,true,false,500,null,section);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1305,18 +1505,47 @@ document.getElementById('time-conflict-backdrop').addEventListener('click',close
 /* ═══════════════════════════════════════════════════════════════
    PERSIST
 ═══════════════════════════════════════════════════════════════ */
+function dateKeyForPage(page){
+  return page==='history' ? historyDate : dateKeyOffset(PAGE_OFFSETS[page]);
+}
+
 function saveState(page){
-  const key='todo-'+dateKeyOffset(PAGE_OFFSETS[page]);
+  const dateKey=dateKeyForPage(page);
+  if(!dateKey)return;
+  const key='todo-'+dateKey;
   const snap={sections:{},deadlines:deadlines[page]||{}};
   SECTIONS.forEach(s=>{snap.sections[s]=state[page][s].map(i=>({text:i.text,done:i.done,streak:i.streak||0,time:i.time||null}));});
   try{localStorage.setItem(key,JSON.stringify(snap));}catch(e){}
+  if(currentUser){
+    sb.from('daily_lists').upsert(
+      {user_id:currentUser.id,date:dateKey,data:snap,updated_at:new Date().toISOString()},
+      {onConflict:'user_id,date'}
+    ).then(({error})=>{ if(error) console.error('Supabase save failed:',error.message); });
+  }
 }
-function loadState(page){
-  const key='todo-'+dateKeyOffset(PAGE_OFFSETS[page]);
-  let s=null;try{s=JSON.parse(localStorage.getItem(key));}catch(e){}
-  if(!s)return;
+
+// Loads a page's data, preferring Supabase (source of truth across devices)
+// when signed in, falling back to the local cache when offline or signed out.
+// Returns the raw snapshot object (or null) so callers like computeStreaks
+// can reuse it without a second fetch.
+async function loadState(page,dateKeyOverride){
+  const dateKey=dateKeyOverride||dateKeyForPage(page);
+  if(!dateKey)return null;
+  const key='todo-'+dateKey;
+  let s=null;
+  if(currentUser){
+    try{
+      const{data,error}=await sb.from('daily_lists').select('data').eq('user_id',currentUser.id).eq('date',dateKey).maybeSingle();
+      if(!error&&data)s=data.data;
+    }catch(e){ console.error('Supabase load failed:',e.message); }
+  }
+  if(!s){
+    try{s=JSON.parse(localStorage.getItem(key));}catch(e){}
+  }
+  if(!s)return null;
   SECTIONS.forEach(sec=>{const a=s.sections?s.sections[sec]:s[sec];if(a&&Array.isArray(a))state[page][sec]=a.map(i=>({id:++idCounter,text:i.text,done:!!i.done,streak:i.streak||0,time:i.time||null}));});
   if(s.deadlines)SECTIONS.forEach(sec=>{if(deadlines[page])deadlines[page][sec]=s.deadlines[sec]||null;});
+  return s;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1368,7 +1597,7 @@ function checkAllDone(){
   if(done<tot)celebShown=false;
 }
 function closeCelebration(){document.getElementById('celebration-overlay').classList.remove('show');stopConfetti();}
-const CC=['#e8a838','#b07a10','#e05c3a','#b83d1e','#4a5fa8','#3a9e6a','#c8bfaf','#faf7f2','#d4a853','#e8d5b0'];
+const CC=['#FEDA75','#F58529','#DD2A7B','#8134AF','#5851DB','#F1544A','#C1268F','#FF5C9E','#8B87F5','#ffffff'];
 let cRaf=null,pieces=[];
 function launchConfetti(){const c=document.getElementById('confetti-canvas');c.width=window.innerWidth;c.height=window.innerHeight;c.classList.add('show');pieces=[];for(let i=0;i<120;i++)pieces.push({x:Math.random()*c.width,y:-10-Math.random()*200,w:6+Math.random()*8,h:3+Math.random()*5,color:CC[Math.floor(Math.random()*CC.length)],rot:Math.random()*Math.PI*2,rotV:(Math.random()-.5)*.12,vx:(Math.random()-.5)*2.5,vy:1.8+Math.random()*3.2,opacity:.85+Math.random()*.15,shape:Math.random()>.4?'rect':'circle'});if(cRaf)cancelAnimationFrame(cRaf);animateConfetti();}
 function animateConfetti(){const c=document.getElementById('confetti-canvas'),ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);let alive=0;pieces.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.06;p.vx*=.995;p.rot+=p.rotV;p.vx+=(Math.random()-.5)*.08;if(p.y<c.height+20)alive++;ctx.save();ctx.globalAlpha=p.opacity*Math.max(0,1-(p.y/c.height));ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.fillStyle=p.color;if(p.shape==='circle'){ctx.beginPath();ctx.arc(0,0,p.w/2,0,Math.PI*2);ctx.fill();}else{ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);}ctx.restore();});if(alive>0)cRaf=requestAnimationFrame(animateConfetti);else stopConfetti();}
@@ -1398,8 +1627,8 @@ function toggleTheme(){const d=document.body.classList.toggle('dark');document.d
 function loadTheme(){let s='light';try{s=localStorage.getItem('todo-theme')||'light';}catch(e){}if(s==='dark'){document.body.classList.add('dark');document.documentElement.classList.add('dark-root');document.getElementById('theme-knob').textContent='🌙';}}
 function checkNewDay(){const last=localStorage.getItem('todo-last-day'),today=dateKeyOffset(0);if(last&&last!==today)SECTIONS.forEach(s=>{state.today[s]=[];});localStorage.setItem('todo-last-day',today);}
 setInterval(()=>{const today=dateKeyOffset(0),last=localStorage.getItem('todo-last-day');if(last&&last!==today){SECTIONS.forEach(s=>{state.today[s]=[];render('today',s);});localStorage.setItem('todo-last-day',today);showToast('Good morning! Fresh lists for a new day ☀️');}},60000);
-function computeStreaks(){
-  const key='todo-'+dateKeyOffset(-1);let y=null;try{y=JSON.parse(localStorage.getItem(key));}catch(e){}if(!y)return;
+function computeStreaks(y){
+  if(!y)return;
   const m=new Map();SECTIONS.forEach(s=>{const a=y.sections?y.sections[s]:y[s];(a||[]).forEach(i=>{const n=i.text.toLowerCase().trim();if(!m.has(n)||(i.streak||0)>m.get(n).streak)m.set(n,{streak:i.streak||0,done:!!i.done});});});
   SECTIONS.forEach(s=>{state.today[s].forEach(item=>{const n=item.text.toLowerCase().trim();if(m.has(n)){const y2=m.get(n);item.streak=y2.done?y2.streak+1:0;}});});
 }
@@ -1407,11 +1636,192 @@ function computeStreaks(){
 /* ═══════════════════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════════════════ */
-loadTheme();checkNewDay();
-ALL_PAGES.forEach(p=>loadState(p));
-computeStreaks();
+/* ═══════════════════════════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════════════════════════ */
+let authMode='signin'; // 'signin' | 'signup'
 
-ALL_PAGES.forEach(page=>{
+function updateAuthModeUI(){
+  const sub=document.getElementById('auth-subtitle');
+  const submitBtn=document.getElementById('auth-submit-btn');
+  const toggleBtn=document.getElementById('auth-toggle-mode-btn');
+  if(authMode==='signup'){
+    sub.textContent='Create an account to sync your lists';
+    submitBtn.textContent='Sign Up';
+    toggleBtn.innerHTML='Already have an account? <span>Sign in</span>';
+  } else {
+    sub.textContent='Sign in to sync your lists';
+    submitBtn.textContent='Sign In';
+    toggleBtn.innerHTML="Don't have an account? <span>Sign up</span>";
+  }
+}
+
+function showAuthScreen(){
+  document.getElementById('auth-overlay').classList.remove('hidden');
+}
+function hideAuthScreen(){
+  document.getElementById('auth-overlay').classList.add('hidden');
+}
+
+async function handleAuthSubmit(){
+  const email=document.getElementById('auth-email').value.trim();
+  const password=document.getElementById('auth-password').value;
+  const errEl=document.getElementById('auth-error');
+  const btn=document.getElementById('auth-submit-btn');
+  errEl.textContent='';
+  if(!email||!password){errEl.textContent='Enter an email and password.';return;}
+  if(SUPABASE_URL==='YOUR_SUPABASE_URL'){errEl.textContent='Supabase isn\'t configured yet — see setup instructions.';return;}
+  btn.disabled=true;btn.textContent='Please wait…';
+  try{
+    if(authMode==='signup'){
+      const{data,error}=await sb.auth.signUp({email,password});
+      if(error)throw error;
+      if(!data.session){
+        errEl.style.color='';
+        errEl.textContent='Check your email to confirm your account, then sign in.';
+        authMode='signin';updateAuthModeUI();
+        return;
+      }
+    } else {
+      const{error}=await sb.auth.signInWithPassword({email,password});
+      if(error)throw error;
+    }
+  } catch(e){
+    errEl.textContent=e.message||'Something went wrong.';
+  } finally {
+    btn.disabled=false;
+    updateAuthModeUI();
+  }
+}
+
+async function signOut(){
+  await sb.auth.signOut();
+}
+
+// Runs once we have a signed-in user: loads today/yesterday/tomorrow from
+// Supabase (falling back to the local cache), computes streaks, wires up
+// every button, and reveals the app.
+async function onAuthReady(){
+  hideAuthScreen();
+  checkNewDay();
+  document.querySelectorAll('#drum-backdrop').forEach(el=>el.remove());
+
+  for(const p of ALL_PAGES) await loadState(p);
+  const yesterdaySnap=await loadState('yesterday'); // reuse for streaks, avoids a second fetch pattern
+  computeStreaks(yesterdaySnap);
+
+  ALL_PAGES.forEach(page=>{
+    SECTIONS.forEach(section=>render(page,section));
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CALENDAR — pick any date and jump into a fully-editable history view
+═══════════════════════════════════════════════════════════════ */
+let calViewYear,calViewMonth; // 0-indexed month
+let datesWithData=new Set();
+
+async function fetchDatesWithData(){
+  if(!currentUser)return new Set();
+  try{
+    const{data,error}=await sb.from('daily_lists').select('date').eq('user_id',currentUser.id);
+    if(error||!data)return new Set();
+    return new Set(data.map(r=>r.date));
+  }catch(e){ return new Set(); }
+}
+
+function renderCalendar(){
+  const label=document.getElementById('cal-month-label');
+  const grid=document.getElementById('calendar-grid');
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  label.textContent=`${monthNames[calViewMonth]} ${calViewYear}`;
+  grid.innerHTML='';
+
+  const first=new Date(calViewYear,calViewMonth,1);
+  const startDow=first.getDay();
+  const daysInMonth=new Date(calViewYear,calViewMonth+1,0).getDate();
+  const daysInPrevMonth=new Date(calViewYear,calViewMonth,0).getDate();
+  const todayKey=dateKeyOffset(0);
+
+  const cells=[];
+  for(let i=startDow-1;i>=0;i--)cells.push({day:daysInPrevMonth-i,other:true,month:calViewMonth-1});
+  for(let d=1;d<=daysInMonth;d++)cells.push({day:d,other:false,month:calViewMonth});
+  while(cells.length%7!==0||cells.length<35)cells.push({day:cells.length-startDow-daysInMonth+1,other:true,month:calViewMonth+1});
+
+  cells.forEach(c=>{
+    let y=calViewYear,m=c.month;
+    if(m<0){m=11;y--;} else if(m>11){m=0;y++;}
+    const dateKey=`${y}-${String(m+1).padStart(2,'0')}-${String(c.day).padStart(2,'0')}`;
+    const btn=document.createElement('button');
+    btn.className='calendar-day'+(c.other?' other-month':'')+(dateKey===todayKey?' today':'')+(datesWithData.has(dateKey)?' has-data':'');
+    btn.textContent=c.day;
+    btn.addEventListener('click',()=>{ closeCalendar(); openHistory(dateKey); });
+    grid.appendChild(btn);
+  });
+}
+
+async function openCalendar(){
+  const now=new Date();
+  calViewYear=now.getFullYear();calViewMonth=now.getMonth();
+  datesWithData=await fetchDatesWithData();
+  renderCalendar();
+
+  const pop=document.getElementById('calendar-popover');
+  const bd=document.getElementById('calendar-backdrop');
+  const anchor=document.getElementById('calendar-btn');
+  pop.classList.add('show');
+  bd.style.display='block';
+  const r=anchor.getBoundingClientRect();
+  const vw=window.innerWidth;
+  let left=r.left;
+  if(left+300>vw-8)left=vw-308;
+  if(left<8)left=8;
+  pop.style.top=`${r.bottom+8}px`;
+  pop.style.left=`${left}px`;
+}
+function closeCalendar(){
+  document.getElementById('calendar-popover').classList.remove('show');
+  document.getElementById('calendar-backdrop').style.display='none';
+}
+
+function fmtHistoryDate(dateKey){
+  const[y,m,d]=dateKey.split('-').map(Number);
+  return new Date(y,m-1,d).toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+async function openHistory(dateKey){
+  historyDate=dateKey;
+  SECTIONS.forEach(s=>{state.history[s]=[];deadlines.history[s]=null;});
+  await loadState('history',dateKey);
+  SECTIONS.forEach(s=>render('history',s));
+
+  document.getElementById('date-history').textContent=fmtHistoryDate(dateKey).toUpperCase();
+  const todayKey=dateKeyOffset(0);
+  document.getElementById('history-title').textContent=
+    dateKey===todayKey ? 'Today' : fmtHistoryDate(dateKey).split(',')[0];
+
+  document.getElementById('pages-container').style.display='none';
+  document.getElementById('history-overlay').classList.add('show');
+}
+async function closeHistory(){
+  document.getElementById('history-overlay').classList.remove('show');
+  document.getElementById('pages-container').style.display='';
+  // If the day just viewed/edited in history is also one of the live
+  // carousel pages (yesterday/today/tomorrow), refresh it from the
+  // database so any edits made here show up immediately there too —
+  // otherwise the carousel would keep showing stale in-memory data.
+  const matchingPage=ALL_PAGES.find(p=>dateKeyOffset(PAGE_OFFSETS[p])===historyDate);
+  if(matchingPage){
+    await loadState(matchingPage);
+    SECTIONS.forEach(s=>render(matchingPage,s));
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INIT — gated behind auth: nothing loads or renders until a
+   session is confirmed, since all data now lives per-account.
+═══════════════════════════════════════════════════════════════ */
+[...ALL_PAGES,'history'].forEach(page=>{
   SECTIONS.forEach(section=>{
     const inp=document.getElementById(`input-${page}-${section}`);
     if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter')addTask(page,section);});
@@ -1427,7 +1837,6 @@ ALL_PAGES.forEach(page=>{
     if(eEl)eEl.addEventListener('click',()=>{if(inp)inp.focus();});
     setupDeadlineDrum(page,section);
     setupAddTimeDrum(page,section);
-    render(page,section);
   });
 });
 
@@ -1435,6 +1844,33 @@ document.getElementById('theme-toggle').addEventListener('click',toggleTheme);
 document.getElementById('celebration-backdrop').addEventListener('click',closeCelebration);
 document.getElementById('confirm-backdrop').addEventListener('click',dismissConfirm);
 document.getElementById('confirm-no-btn').addEventListener('click',dismissConfirm);
+
+document.getElementById('auth-submit-btn').addEventListener('click',handleAuthSubmit);
+document.getElementById('auth-toggle-mode-btn').addEventListener('click',()=>{authMode=authMode==='signin'?'signup':'signin';document.getElementById('auth-error').textContent='';updateAuthModeUI();});
+document.getElementById('auth-password').addEventListener('keydown',e=>{if(e.key==='Enter')handleAuthSubmit();});
+document.getElementById('signout-btn').addEventListener('click',signOut);
+
+document.getElementById('calendar-btn').addEventListener('click',openCalendar);
+document.getElementById('calendar-backdrop').addEventListener('click',closeCalendar);
+document.getElementById('cal-prev').addEventListener('click',()=>{calViewMonth--;if(calViewMonth<0){calViewMonth=11;calViewYear--;}renderCalendar();});
+document.getElementById('cal-next').addEventListener('click',()=>{calViewMonth++;if(calViewMonth>11){calViewMonth=0;calViewYear++;}renderCalendar();});
+document.getElementById('history-back-btn').addEventListener('click',closeHistory);
+
+updateAuthModeUI();
+loadTheme(); // applied immediately (not gated behind auth) so the sign-in screen itself respects dark/light preference
+
+// Auth state drives everything: show the sign-in screen until a session
+// exists, then load and render. onAuthStateChange also fires on initial
+// page load with the restored session, so this alone is enough to boot.
+sb.auth.onAuthStateChange((event,session)=>{
+  if(event==='SIGNED_IN'&&session){
+    currentUser=session.user;
+    onAuthReady();
+  } else if(event==='SIGNED_OUT'){
+    currentUser=null;
+    showAuthScreen();
+  }
+});
 </script>
 </body>
 </html>
