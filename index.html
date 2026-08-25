@@ -187,7 +187,7 @@ body.dark .night   .section-title { color:#8B87F5; }
 }
 .todo-item-inner.dragging-item { opacity:.45; cursor:grabbing; }
 @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-.todo-item { animation:slideIn .28s cubic-bezier(.16,1,.3,1) both; }
+.todo-item.enter { animation:slideIn .28s cubic-bezier(.16,1,.3,1) both; }
 
 /* CHECK BTN */
 .check-btn { flex-shrink:0; width:28px; height:28px; border:none; background:transparent; cursor:pointer; padding:0; outline:none; border-radius:50%; overflow:visible; position:relative; display:flex; align-items:center; justify-content:center; }
@@ -293,7 +293,7 @@ body.dark .repeat-btn:hover { color:#B89CF0; border-color:#8134AF; }
 .confetti-canvas.show { opacity:1; }
 
 /* TOAST */
-.toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(10px); background:var(--ink); color:var(--bg); font-family:'Inter',-apple-system,sans-serif; font-weight:600; font-size:.8rem; padding:11px 20px; border-radius:999px; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:400; white-space:nowrap; display:flex; align-items:center; gap:12px; box-shadow:0 8px 28px rgba(0,0,0,.25); }
+.toast { position:fixed; top:max(20px, env(safe-area-inset-top) + 14px); left:50%; transform:translateX(-50%) translateY(-14px); background:var(--ink); color:var(--bg); font-family:'Inter',-apple-system,sans-serif; font-weight:600; font-size:.8rem; padding:11px 20px; border-radius:999px; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; z-index:400; white-space:nowrap; display:flex; align-items:center; gap:12px; box-shadow:0 8px 28px rgba(0,0,0,.25); touch-action:none; }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
 .toast-undo-btn { color:#e8c07a; font-style:normal; font-weight:600; text-decoration:underline; cursor:pointer; background:none; border:none; font-family:inherit; font-size:inherit; padding:0; -webkit-tap-highlight-color:transparent; }
 .milestone-toast { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.85); background:var(--paper); border:1.5px solid rgba(245,133,41,.4); box-shadow:0 16px 56px rgba(0,0,0,.24); border-radius:24px; padding:24px 28px 20px; text-align:center; z-index:250; pointer-events:none; opacity:0; max-width:280px; width:85%; transition:opacity .3s,transform .4s cubic-bezier(.16,1,.3,1); }
@@ -359,7 +359,9 @@ body.dark .repeat-btn:hover { color:#B89CF0; border-color:#8134AF; }
 }
 .auth-toggle-mode-btn span { color:#DD2A7B; text-decoration:underline; }
 .auth-error { color:var(--ig-red); font-size:.82rem; font-weight:600; text-align:center; margin-top:14px; min-height:1em; }
-.auth-loading { text-align:center; color:var(--ink-light); font-weight:600; font-size:.9rem; }
+.auth-loading { display:none; text-align:center; color:var(--ink-light); font-weight:600; font-size:.9rem; padding:20px 0; }
+.auth-overlay.checking .auth-loading { display:block; }
+.auth-overlay.checking .auth-form-fields { display:none; }
 
 /* HISTORY OVERLAY */
 .history-overlay {
@@ -418,19 +420,22 @@ body.dark .todo-item-inner,body.dark .drag-ghost { background:#16121f; }
 </head>
 <body>
 
-<div class="auth-overlay" id="auth-overlay">
+<div class="auth-overlay checking" id="auth-overlay">
   <div class="auth-card">
     <h1 class="auth-title">Daily To-Do</h1>
-    <div class="auth-field"><input type="email" id="auth-email" placeholder="Email" autocomplete="email" autocapitalize="off"/></div>
-    <div class="auth-field auth-password-field">
-      <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password"/>
-      <button type="button" class="auth-password-toggle" id="auth-password-toggle" aria-label="Show password">
-        <svg viewBox="0 0 24 24" id="auth-eye-icon"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-      </button>
+    <div class="auth-loading" id="auth-loading">Loading…</div>
+    <div class="auth-form-fields" id="auth-form-fields">
+      <div class="auth-field"><input type="email" id="auth-email" placeholder="Email" autocomplete="email" autocapitalize="off"/></div>
+      <div class="auth-field auth-password-field">
+        <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password"/>
+        <button type="button" class="auth-password-toggle" id="auth-password-toggle" aria-label="Show password">
+          <svg viewBox="0 0 24 24" id="auth-eye-icon"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <button class="auth-submit-btn" id="auth-submit-btn">Sign In</button>
+      <button class="auth-toggle-mode-btn" id="auth-toggle-mode-btn">Don't have an account? <span>Sign up</span></button>
+      <p class="auth-error" id="auth-error"></p>
     </div>
-    <button class="auth-submit-btn" id="auth-submit-btn">Sign In</button>
-    <button class="auth-toggle-mode-btn" id="auth-toggle-mode-btn">Don't have an account? <span>Sign up</span></button>
-    <p class="auth-error" id="auth-error"></p>
   </div>
 </div>
 
@@ -612,9 +617,8 @@ let historyDate=null; // 'YYYY-MM-DD' currently shown in the history overlay
    The anon key is safe to ship client-side; Row Level Security on
    the daily_lists table is what actually keeps everyone's data private.
 ═══════════════════════════════════════════════════════════════ */
-const SUPABASE_URL='https://zgjasvtlpdaqnxvxynig.supabase.co';
-const SUPABASE_ANON_KEY='sb_publishable_eX0t656vvYzlVbfi5Rwjrg_WavQr_GQ';
-  
+const SUPABASE_URL='YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY='YOUR_SUPABASE_ANON_KEY';
 if(!window.supabase){
   document.body.innerHTML='<div style="padding:60px 24px;text-align:center;font-family:-apple-system,sans-serif;color:#a89bc2;background:#09070d;min-height:100vh;">Couldn\'t load the required library.<br>Check your connection and reload.</div>';
   throw new Error('Supabase JS failed to load from CDN');
@@ -910,7 +914,9 @@ function render(page,section){
   items.forEach(item=>{
     const key=`${page}-${section}-${item.id}`;
     const li=document.createElement('li');
-    li.className='todo-item';li.dataset.id=item.id;li.dataset.page=page;li.dataset.section=section;
+    const isNew=!!item._justAdded;
+    delete item._justAdded;
+    li.className='todo-item'+(isNew?' enter':'');li.dataset.id=item.id;li.dataset.page=page;li.dataset.section=section;
 
     const bg=document.createElement('div');
     bg.className='swipe-delete-bg';
@@ -1372,7 +1378,7 @@ function addTask(page,section){
   const time=addTimeDraft[page][section]||null;
 
   function doAdd(targetSection){
-    state[page][targetSection].push({id:++idCounter,text,done:false,streak:0,time});
+    state[page][targetSection].push({id:++idCounter,text,done:false,streak:0,time,_justAdded:true});
     // Reset time draft
     addTimeDraft[page][section]=null;
     const lbl=document.getElementById(`addtime-label-${page}-${section}`);
@@ -1415,6 +1421,7 @@ function deleteTask(page,section,id){
 function undoDelete(){
   if(!lastDeleted)return;
   const{page,section,item,index}=lastDeleted;
+  item._justAdded=true;
   const ti=Math.max(0,Math.min(index,state[page][section].length));
   state[page][section].splice(ti,0,item);
   render(page,section);
@@ -1573,7 +1580,7 @@ function repeatYesterday(section){
   const arr=y?(y.sections?y.sections[section]:y[section]):null;
   if(!arr||!arr.length){showToast('No tasks saved from yesterday for this list');return;}
   const ex=new Set(state.today[section].map(i=>i.text.toLowerCase().trim()));let added=0;
-  arr.forEach(({text,done,streak,time})=>{if(!ex.has(text.toLowerCase().trim())){state.today[section].push({id:++idCounter,text,done:false,streak:done?(streak||0)+1:0,time:time||null});added++;}});
+  arr.forEach(({text,done,streak,time})=>{if(!ex.has(text.toLowerCase().trim())){state.today[section].push({id:++idCounter,text,done:false,streak:done?(streak||0)+1:0,time:time||null,_justAdded:true});added++;}});
   if(!added)showToast("Yesterday's tasks are already in this list");
   else{render('today',section);saveState('today');showToast(`Added ${added} task${added>1?'s':''} from yesterday`);}
 }
@@ -1587,7 +1594,7 @@ function pullToday(section){
   const ex=new Set(state.tomorrow[section].map(i=>i.text.toLowerCase().trim()));let added=0;
   arr.forEach(({text,time})=>{
     if(!ex.has(text.toLowerCase().trim())){
-      state.tomorrow[section].push({id:++idCounter,text,done:false,streak:0,time:time||null});
+      state.tomorrow[section].push({id:++idCounter,text,done:false,streak:0,time:time||null,_justAdded:true});
       added++;
     }
   });
@@ -1633,9 +1640,16 @@ function stopConfetti(){if(cRaf){cancelAnimationFrame(cRaf);cRaf=null;}const c=d
    TOAST / MILESTONE / THEME / NEW-DAY / STREAKS
 ═══════════════════════════════════════════════════════════════ */
 let toastT=null;
-function showToast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
+function showToast(m){
+  const el=document.getElementById('toast');
+  el.style.transform='';el.style.transition='';
+  el.textContent=m;el.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>el.classList.remove('show'),2800);
+}
 function showUndoToast(message){
   const el=document.getElementById('toast');
+  el.style.transform='';el.style.transition='';
   el.innerHTML='';
   const span=document.createElement('span');span.textContent=message;el.appendChild(span);
   const btn=document.createElement('button');
@@ -1644,9 +1658,36 @@ function showUndoToast(message){
   el.appendChild(btn);
   el.classList.add('show');
   clearTimeout(toastT);
-  toastT=setTimeout(()=>{el.classList.remove('show');lastDeleted=null;},4500);
+  toastT=setTimeout(()=>{el.classList.remove('show');lastDeleted=null;},10000);
 }
-function hideToast(){const el=document.getElementById('toast');el.classList.remove('show');clearTimeout(toastT);}
+function hideToast(){const el=document.getElementById('toast');el.classList.remove('show');el.style.transform='';el.style.transition='';clearTimeout(toastT);}
+
+// Swipe the toast back up to dismiss it early (works for both the plain
+// toast and the undo toast — swiping away means "don't undo", same as
+// letting the timer run out).
+(function setupToastSwipe(){
+  const el=document.getElementById('toast');
+  let startY=0,dy=0,dragging=false;
+  el.addEventListener('touchstart',e=>{
+    startY=e.touches[0].clientY;dy=0;dragging=true;
+    el.style.transition='none';
+  },{passive:true});
+  el.addEventListener('touchmove',e=>{
+    if(!dragging)return;
+    dy=Math.min(0,e.touches[0].clientY-startY); // only allow upward drag
+    el.style.transform=`translateX(-50%) translateY(${dy}px)`;
+  },{passive:true});
+  el.addEventListener('touchend',()=>{
+    dragging=false;
+    if(dy<-30){
+      lastDeleted=null;
+      clearTimeout(toastT);
+      el.classList.remove('show');
+    }
+    el.style.transition='';
+    el.style.transform='';
+  });
+})();
 let milT=null;
 function showMilestone(text,streak){const el=document.getElementById('milestone-toast');document.getElementById('milestone-text').textContent=`${streak} days in a row!`;document.getElementById('milestone-sub').textContent=`"${text}" — keep it up! 🎉`;el.classList.add('show');clearTimeout(milT);milT=setTimeout(()=>el.classList.remove('show'),3500);}
 function toggleTheme(){const d=document.body.classList.toggle('dark');document.documentElement.classList.toggle('dark-root',d);document.getElementById('theme-knob').textContent=d?'🌙':'☀️';try{localStorage.setItem('todo-theme',d?'dark':'light');}catch(e){}}
@@ -1680,10 +1721,14 @@ function updateAuthModeUI(){
 }
 
 function showAuthScreen(){
-  document.getElementById('auth-overlay').classList.remove('hidden');
+  const el=document.getElementById('auth-overlay');
+  el.classList.remove('hidden');
+  el.classList.remove('checking');
 }
 function hideAuthScreen(){
-  document.getElementById('auth-overlay').classList.add('hidden');
+  const el=document.getElementById('auth-overlay');
+  el.classList.add('hidden');
+  el.classList.remove('checking');
 }
 
 async function handleAuthSubmit(){
@@ -1897,9 +1942,8 @@ document.getElementById('history-back-btn').addEventListener('click',closeHistor
 updateAuthModeUI();
 loadTheme(); // applied immediately (not gated behind auth) so the sign-in screen itself respects dark/light preference
 
-// Auth state drives everything: show the sign-in screen until a session
-// exists, then load and render. onAuthStateChange also fires on initial
-// page load with the restored session, so this alone is enough to boot.
+// Ongoing auth changes (actual sign-in via the form, sign-out, or a
+// session expiring elsewhere) come through here.
 sb.auth.onAuthStateChange((event,session)=>{
   if(event==='SIGNED_IN'&&session){
     currentUser=session.user;
@@ -1908,7 +1952,26 @@ sb.auth.onAuthStateChange((event,session)=>{
     currentUser=null;
     showAuthScreen();
   }
+  // INITIAL_SESSION is intentionally ignored here — it's handled once,
+  // explicitly, by initAuth() below. Relying on this event for the
+  // initial check was the bug: the client fires INITIAL_SESSION on
+  // cold load, not SIGNED_IN, so a persisted session was never picked
+  // up and the app fell back to showing the login screen every time.
 });
+
+// Runs once on load: explicitly checks for a restored session rather
+// than waiting on an event that may not arrive in the form expected.
+async function initAuth(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(session){
+    currentUser=session.user;
+    await onAuthReady();
+  } else {
+    showAuthScreen();
+  }
+}
+initAuth();
+
 </script>
 </body>
 </html>
