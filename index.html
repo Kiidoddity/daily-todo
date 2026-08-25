@@ -612,17 +612,28 @@ const addTimeDraft = {yesterday:{morning:null,midday:null,night:null},today:{mor
 let idCounter=0;
 let historyDate=null; // 'YYYY-MM-DD' currently shown in the history overlay
 
-const SUPABASE_URL='https://zgjasvtlpdaqnxvxynig.supabase.co';
-const SUPABASE_ANON_KEY='sb_publishable_eX0t656vvYzlVbfi5Rwjrg_WavQr_GQ';/* ═══════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
    SUPABASE — fill these in from your project's Settings → API page.
    The anon key is safe to ship client-side; Row Level Security on
    the daily_lists table is what actually keeps everyone's data private.
 ═══════════════════════════════════════════════════════════════ */
+const SUPABASE_URL='YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY='YOUR_SUPABASE_ANON_KEY';
 if(!window.supabase){
   document.body.innerHTML='<div style="padding:60px 24px;text-align:center;font-family:-apple-system,sans-serif;color:#a89bc2;background:#09070d;min-height:100vh;">Couldn\'t load the required library.<br>Check your connection and reload.</div>';
   throw new Error('Supabase JS failed to load from CDN');
 }
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+if(SUPABASE_URL==='YOUR_SUPABASE_URL'||SUPABASE_ANON_KEY==='YOUR_SUPABASE_ANON_KEY'){
+  document.body.innerHTML='<div style="padding:60px 24px;text-align:center;font-family:-apple-system,sans-serif;color:#a89bc2;background:#09070d;min-height:100vh;">This copy still has placeholder Supabase credentials.<br>Fill in SUPABASE_URL and SUPABASE_ANON_KEY near the top of the script, then redeploy.</div>';
+  throw new Error('Supabase credentials are still placeholders');
+}
+let sb;
+try{
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+}catch(e){
+  document.body.innerHTML='<div style="padding:60px 24px;text-align:center;font-family:-apple-system,sans-serif;color:#a89bc2;background:#09070d;min-height:100vh;">Couldn\'t connect to Supabase — SUPABASE_URL looks invalid.<br>Double-check it matches your project\'s URL exactly.</div>';
+  throw e;
+}
 let currentUser=null;
 
 function generateTimes(){
@@ -1575,8 +1586,7 @@ async function loadState(page,dateKeyOverride){
    YESTERDAY REPEAT / TODAY PULL / CONFIRM CLEAR
 ═══════════════════════════════════════════════════════════════ */
 function repeatYesterday(section){
-  const key='todo-'+dateKeyOffset(-1);let y=null;try{y=JSON.parse(localStorage.getItem(key));}catch(e){}
-  const arr=y?(y.sections?y.sections[section]:y[section]):null;
+  const arr=state.yesterday[section];
   if(!arr||!arr.length){showToast('No tasks saved from yesterday for this list');return;}
   const ex=new Set(state.today[section].map(i=>i.text.toLowerCase().trim()));let added=0;
   arr.forEach(({text,done,streak,time})=>{if(!ex.has(text.toLowerCase().trim())){state.today[section].push({id:++idCounter,text,done:false,streak:done?(streak||0)+1:0,time:time||null,_justAdded:true});added++;}});
@@ -1960,12 +1970,23 @@ sb.auth.onAuthStateChange((event,session)=>{
 
 // Runs once on load: explicitly checks for a restored session rather
 // than waiting on an event that may not arrive in the form expected.
+// Wrapped defensively — if the session check throws, or never settles
+// at all (bad URL, network hiccup, misconfigured project), this falls
+// back to the sign-in form after a few seconds instead of leaving the
+// person stuck on "Loading…" forever with no way forward.
 async function initAuth(){
-  const{data:{session}}=await sb.auth.getSession();
-  if(session){
-    currentUser=session.user;
-    await onAuthReady();
-  } else {
+  try{
+    const sessionPromise=sb.auth.getSession();
+    const timeoutPromise=new Promise((_,reject)=>setTimeout(()=>reject(new Error('Timed out checking for a session')),8000));
+    const{data:{session}}=await Promise.race([sessionPromise,timeoutPromise]);
+    if(session){
+      currentUser=session.user;
+      await onAuthReady();
+    } else {
+      showAuthScreen();
+    }
+  } catch(e){
+    console.error('Auth check failed, falling back to sign-in screen:',e);
     showAuthScreen();
   }
 }
