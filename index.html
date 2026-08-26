@@ -111,6 +111,7 @@ body.dark #page-tomorrow .page-header h1 { color:#B89CF0; }
   box-shadow: var(--card-shadow);
   border: 1px solid var(--card-border);
   overflow:hidden; position:relative;
+  transform:translateZ(0); -webkit-backface-visibility:hidden;
 }
 .section-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; z-index:2; pointer-events:none; }
 .morning.section-card::before { background:var(--grad-morning); }
@@ -173,7 +174,7 @@ body.dark .night   .section-title { color:#8B87F5; }
 
 /* TODO ITEMS */
 .todo-list { list-style:none; padding:0; }
-.todo-item { position:relative; overflow:hidden; border-bottom:1px solid var(--paper-dark); }
+.todo-item { position:relative; border-bottom:1px solid var(--paper-dark); }
 .todo-item:last-child { border-bottom:none; }
 .swipe-delete-bg {
   position:absolute; inset:0; background:var(--ig-red);
@@ -184,6 +185,7 @@ body.dark .night   .section-title { color:#8B87F5; }
 .todo-item-inner {
   display:flex; align-items:center; gap:12px; padding:11px 20px;
   background: var(--paper); position:relative; z-index:1; will-change:transform; cursor:grab;
+  transform:translateZ(0); -webkit-backface-visibility:hidden;
 }
 .todo-item-inner.dragging-item { opacity:.45; cursor:grabbing; }
 @keyframes slideIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
@@ -202,6 +204,29 @@ body.dark .night   .section-title { color:#8B87F5; }
 .inline-time-btn:hover { border-color:var(--ink-light); color:var(--ink-light); }
 .inline-time-btn.has-time { border-style:solid; color:var(--ink-light); }
 .streak-badge { flex-shrink:0; font-size:.74rem; font-family:'Plus Jakarta Sans',-apple-system,sans-serif; font-weight:700; color:#fff; background:var(--grad-morning); border:none; border-radius:999px; padding:3px 9px; white-space:nowrap; user-select:none; box-shadow:0 2px 8px rgba(245,133,41,.3); }
+
+/* SUB-ITEMS */
+.subitem-toggle-btn {
+  display:flex; align-items:center; gap:3px; flex-shrink:0; background:none; border:none; cursor:pointer;
+  color:var(--ink-faint); padding:5px; border-radius:8px; transition:color .15s,background .15s;
+}
+.subitem-toggle-btn:hover { color:var(--ink-light); background:var(--paper-dark); }
+.subitem-toggle-btn svg { width:14px; height:14px; stroke:currentColor; stroke-width:2.5; fill:none; stroke-linecap:round; stroke-linejoin:round; transition:transform .2s; display:block; }
+.subitem-toggle-btn.expanded { color:#8134AF; }
+.subitem-toggle-btn.expanded svg { transform:rotate(90deg); }
+.subitem-count-badge { font-size:.68rem; font-weight:700; color:inherit; }
+.subitem-panel-row { list-style:none; border-bottom:1px solid var(--paper-dark); }
+.subitem-panel { background:var(--paper-dark); padding:8px 20px 12px 58px; }
+.subitem-list { list-style:none; padding:0; }
+.subitem-row { display:flex; align-items:center; gap:8px; padding:6px 0; }
+.subitem-text { flex:1; min-width:0; font-size:.86rem; color:var(--ink); }
+.subitem-text.strikethrough { color:var(--ink-faint); text-decoration:line-through; text-decoration-color:var(--ink-faint); }
+.subitem-delete-btn { flex-shrink:0; width:22px; height:22px; border-radius:50%; border:none; background:none; color:var(--ink-faint); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:1.05rem; line-height:1; transition:color .15s; }
+.subitem-delete-btn:hover { color:var(--ig-red); }
+.subitem-add-row { display:flex; align-items:center; gap:8px; padding-top:6px; }
+.subitem-add-input { flex:1; min-width:0; background:var(--paper); border:1px solid var(--card-border); border-radius:10px; padding:7px 12px; font-family:'Inter',-apple-system,sans-serif; font-size:16px; color:var(--ink); outline:none; transition:border-color .15s; }
+.subitem-add-input:focus { border-color:#8134AF; }
+.subitem-add-btn { flex-shrink:0; width:30px; height:30px; border-radius:50%; border:none; color:#fff; background:var(--grad-full); font-size:1.1rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; }
 .streak-badge.milestone { animation:streakPop .6s cubic-bezier(.16,1,.3,1) both; }
 @keyframes streakPop { 0%{transform:scale(1)} 30%{transform:scale(1.5) rotate(-8deg)} 55%{transform:scale(.9) rotate(4deg)} 75%{transform:scale(1.15) rotate(-2deg)} 100%{transform:scale(1) rotate(0)} }
 .edit-input { flex:1; min-width:0; font-family:'Inter',-apple-system,sans-serif; font-size:16px; color:var(--ink); background:rgba(129,52,175,.06); border:1.5px solid #8134AF; border-radius:10px; padding:4px 10px; outline:none; }
@@ -914,68 +939,304 @@ function updateCount(page,section){
     }
   }
 }
+// Item ids whose sub-item panel is currently expanded (UI-only, not persisted)
+const expandedSubItems=new Set();
+
+function timeBadgeClickHandler(tb,item,page,section){
+  return e=>{
+    e.stopPropagation();
+    showDrumPopover(tb,item.time,TIME_OPTIONS,val=>{
+      item.time=val;
+      if(val && deadlines[page][section] && hasTimeConflict(val, deadlines[page][section])){
+        showTimeConflict(page,section,item.text,val,
+          ()=>{render(page,section);saveState(page);},
+          (s)=>{
+            state[page][section]=state[page][section].filter(i=>i.id!==item.id);
+            item.done=false;
+            state[page][s].push(item);
+            render(page,section);render(page,s);saveState(page);
+          }
+        );
+      } else {
+        render(page,section);saveState(page);
+      }
+    });
+  };
+}
+
+// Builds a brand-new <li> for an item that has never been rendered before.
+// Only called for genuinely new items — existing ones are reused via updateItemNode.
+function buildItemNode(item,page,section){
+  const key=`${page}-${section}-${item.id}`;
+  const li=document.createElement('li');
+  const isNew=!!item._justAdded;
+  delete item._justAdded;
+  li.className='todo-item'+(isNew?' enter':'');li.dataset.id=item.id;li.dataset.page=page;li.dataset.section=section;
+  if(isNew)li.addEventListener('animationend',()=>li.classList.remove('enter'),{once:true});
+
+  const bg=document.createElement('div');
+  bg.className='swipe-delete-bg';
+  bg.innerHTML='Delete <svg viewBox="0 0 14 14"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>';
+
+  const inner=document.createElement('div');inner.className='todo-item-inner';
+
+  const btn=document.createElement('button');btn.className='check-btn';btn.appendChild(mkCanvas(key,item.done,section));
+  btn.addEventListener('click',e=>{e.stopPropagation();toggleDone(page,section,item.id,li);});
+
+  const txt=document.createElement('span');txt.className='todo-text'+(item.done?' strikethrough':'');txt.textContent=item.text;
+  txt.addEventListener('click',e=>{e.stopPropagation();startEdit(page,section,item.id,li);});
+
+  inner.appendChild(btn);inner.appendChild(txt);
+
+  if(item.time){
+    const tb=document.createElement('span');tb.className='task-time-badge';tb.textContent=item.time;
+    tb.addEventListener('click',timeBadgeClickHandler(tb,item,page,section));
+    inner.appendChild(tb);
+  }
+  if(item.streak&&item.streak>=2){const b=document.createElement('span');b.className='streak-badge'+(item.streak%7===0?' milestone':'');b.textContent=`${item.streak}🔥`;inner.appendChild(b);}
+
+  const subToggle=document.createElement('button');
+  subToggle.className='subitem-toggle-btn'+(expandedSubItems.has(String(item.id))?' expanded':'');
+  subToggle.setAttribute('aria-label','Show sub-items');
+  subToggle.innerHTML='<svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>';
+  if(item.subItems&&item.subItems.length){
+    const cnt=document.createElement('span');cnt.className='subitem-count-badge';
+    cnt.textContent=`${item.subItems.filter(s=>s.done).length}/${item.subItems.length}`;
+    subToggle.appendChild(cnt);
+  }
+  subToggle.addEventListener('click',e=>{e.stopPropagation();toggleSubPanel(page,section,item.id);});
+  inner.appendChild(subToggle);
+
+  li.appendChild(bg);li.appendChild(inner);
+  attachItemHandlers(li,inner,bg,page,section,item.id);
+  return li;
+}
+
+// Updates an EXISTING <li> in place — no recreation, no animation, no
+// visual movement. This is what keeps already-rendered items from
+// twitching every time something elsewhere in the list changes.
+function updateItemNode(li,item,page,section){
+  if(li.querySelector('.edit-input'))return; // actively being edited — leave untouched
+
+  const key=`${page}-${section}-${item.id}`;
+  const inner=li.querySelector('.todo-item-inner');
+  const canvas=li.querySelector('.check-btn canvas');
+  if(canvas&&!animMap.has(key)){
+    const ctx=canvas.getContext('2d');
+    item.done?drawDone(ctx,section):drawIdle(ctx);
+  }
+
+  let txt=inner.querySelector('.todo-text');
+  if(!txt){
+    txt=document.createElement('span');txt.className='todo-text';
+    txt.addEventListener('click',e=>{e.stopPropagation();startEdit(page,section,item.id,li);});
+    const btn=inner.querySelector('.check-btn');
+    inner.insertBefore(txt,btn.nextSibling);
+  }
+  txt.textContent=item.text;
+  txt.classList.toggle('strikethrough',item.done);
+
+  const subToggle=inner.querySelector('.subitem-toggle-btn');
+
+  let tb=inner.querySelector('.task-time-badge');
+  if(item.time){
+    if(!tb){
+      tb=document.createElement('span');tb.className='task-time-badge';
+      inner.insertBefore(tb,subToggle);
+    }
+    tb.textContent=item.time;
+    tb.onclick=timeBadgeClickHandler(tb,item,page,section);
+  } else if(tb){
+    tb.remove();
+  }
+
+  let sb=inner.querySelector('.streak-badge');
+  if(item.streak&&item.streak>=2){
+    if(!sb){
+      sb=document.createElement('span');sb.className='streak-badge';
+      inner.insertBefore(sb,subToggle);
+    }
+    sb.className='streak-badge'+(item.streak%7===0?' milestone':'');
+    sb.textContent=`${item.streak}🔥`;
+  } else if(sb){
+    sb.remove();
+  }
+
+  if(subToggle){
+    subToggle.classList.toggle('expanded',expandedSubItems.has(String(item.id)));
+    let cnt=subToggle.querySelector('.subitem-count-badge');
+    if(item.subItems&&item.subItems.length){
+      if(!cnt){cnt=document.createElement('span');cnt.className='subitem-count-badge';subToggle.appendChild(cnt);}
+      cnt.textContent=`${item.subItems.filter(s=>s.done).length}/${item.subItems.length}`;
+    } else if(cnt){
+      cnt.remove();
+    }
+  }
+}
+
 function render(page,section){
   const lEl=document.getElementById(`list-${page}-${section}`);
   const eEl=document.getElementById(`empty-${page}-${section}`);
   if(!lEl)return;
   const items=state[page][section];
-  lEl.innerHTML='';
   if(eEl)eEl.style.display=items.length?'none':'';
-  items.forEach(item=>{
-    const key=`${page}-${section}-${item.id}`;
-    const li=document.createElement('li');
-    const isNew=!!item._justAdded;
-    delete item._justAdded;
-    li.className='todo-item'+(isNew?' enter':'');li.dataset.id=item.id;li.dataset.page=page;li.dataset.section=section;
 
-    const bg=document.createElement('div');
-    bg.className='swipe-delete-bg';
-    bg.innerHTML='Delete <svg viewBox="0 0 14 14"><line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/></svg>';
-
-    const inner=document.createElement('div');inner.className='todo-item-inner';
-
-    const btn=document.createElement('button');btn.className='check-btn';btn.appendChild(mkCanvas(key,item.done,section));
-    btn.addEventListener('click',e=>{e.stopPropagation();toggleDone(page,section,item.id,li);});
-
-    const txt=document.createElement('span');txt.className='todo-text'+(item.done?' strikethrough':'');txt.textContent=item.text;
-    txt.addEventListener('click',e=>{e.stopPropagation();startEdit(page,section,item.id,li);});
-
-    inner.appendChild(btn);inner.appendChild(txt);
-
-    if(item.time){
-      const tb=document.createElement('span');tb.className='task-time-badge';tb.textContent=item.time;
-      tb.addEventListener('click',e=>{
-        e.stopPropagation();
-        showDrumPopover(tb,item.time,TIME_OPTIONS,val=>{
-          item.time=val;
-          // Check conflict after time change
-          if(val && deadlines[page][section] && hasTimeConflict(val, deadlines[page][section])){
-            const fitting=findFittingSections(page,section,val);
-            showTimeConflict(page,section,item.text,val,
-              ()=>{render(page,section);saveState(page);},
-              (s)=>{
-                state[page][section]=state[page][section].filter(i=>i.id!==item.id);
-                item.done=false;
-                state[page][s].push(item);
-                render(page,section);render(page,s);saveState(page);
-              }
-            );
-          } else {
-            render(page,section);saveState(page);
-          }
-        });
-      });
-      inner.appendChild(tb);
-    }
-    if(item.streak&&item.streak>=2){const b=document.createElement('span');b.className='streak-badge'+(item.streak%7===0?' milestone':'');b.textContent=`${item.streak}🔥`;inner.appendChild(b);}
-
-    li.appendChild(bg);li.appendChild(inner);
-    attachItemHandlers(li,inner,bg,page,section,item.id);
-    lEl.appendChild(li);
+  // Index existing top-level item nodes (ignoring sub-item panel rows) by id
+  const existingItemNodes=new Map();
+  Array.from(lEl.children).forEach(el=>{
+    if(el.classList.contains('todo-item'))existingItemNodes.set(el.dataset.id,el);
   });
+
+  let cursor=null;
+  items.forEach(item=>{
+    const idStr=String(item.id);
+    let node=existingItemNodes.get(idStr);
+    if(node){
+      updateItemNode(node,item,page,section);
+      existingItemNodes.delete(idStr);
+    } else {
+      node=buildItemNode(item,page,section);
+    }
+
+    const wantAfter=cursor?cursor.nextSibling:lEl.firstChild;
+    if(wantAfter!==node)lEl.insertBefore(node,wantAfter);
+    cursor=node;
+
+    const panelId=`subpanel-${page}-${section}-${item.id}`;
+    let panelLi=document.getElementById(panelId);
+    if(expandedSubItems.has(idStr)){
+      if(!panelLi){
+        panelLi=document.createElement('li');
+        panelLi.className='subitem-panel-row';
+        panelLi.id=panelId;
+      }
+      renderSubPanel(panelLi,item,page,section);
+      const wantAfter2=cursor.nextSibling;
+      if(wantAfter2!==panelLi)lEl.insertBefore(panelLi,wantAfter2);
+      cursor=panelLi;
+    } else if(panelLi){
+      panelLi.remove();
+    }
+  });
+
+  // Anything left in existingItemNodes is no longer in the array — remove it
+  // (and its sub-item panel, if it had one open).
+  existingItemNodes.forEach((li,id)=>{
+    li.remove();
+    const stalePanel=document.getElementById(`subpanel-${page}-${section}-${id}`);
+    if(stalePanel)stalePanel.remove();
+  });
+
   updateCount(page,section);
   const dl=document.getElementById(`deadline-label-${page}-${section}`);if(dl)dl.textContent=deadlines[page][section]||'—';
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SUB-ITEMS — a lightweight checklist nested under a task, for
+   breaking a big item into smaller steps without cluttering the
+   main list. Uses the exact same check-circle animation as top-level
+   items.
+═══════════════════════════════════════════════════════════════ */
+function toggleSubPanel(page,section,itemId){
+  const idStr=String(itemId);
+  if(expandedSubItems.has(idStr))expandedSubItems.delete(idStr);
+  else expandedSubItems.add(idStr);
+  render(page,section);
+}
+
+function renderSubPanel(panelLi,item,page,section){
+  panelLi.innerHTML='';
+  const wrap=document.createElement('div');wrap.className='subitem-panel';
+
+  const list=document.createElement('ul');list.className='subitem-list';
+  (item.subItems||[]).forEach(sub=>{
+    const row=document.createElement('li');row.className='subitem-row';row.dataset.subid=sub.id;
+
+    const key=`${page}-${section}-${item.id}-sub-${sub.id}`;
+    const cbtn=document.createElement('button');cbtn.className='check-btn';cbtn.appendChild(mkCanvas(key,sub.done,section));
+    cbtn.addEventListener('click',e=>{e.stopPropagation();toggleSubDone(page,section,item.id,sub.id);});
+
+    const txt=document.createElement('span');txt.className='subitem-text'+(sub.done?' strikethrough':'');txt.textContent=sub.text;
+
+    const del=document.createElement('button');del.className='subitem-delete-btn';del.textContent='×';del.setAttribute('aria-label','Delete sub-item');
+    del.addEventListener('click',e=>{e.stopPropagation();deleteSubItem(page,section,item.id,sub.id);});
+
+    row.appendChild(cbtn);row.appendChild(txt);row.appendChild(del);
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+
+  const addRow=document.createElement('div');addRow.className='subitem-add-row';
+  const input=document.createElement('input');input.className='subitem-add-input';input.type='text';input.placeholder='Add a sub-item…';
+  const addBtn=document.createElement('button');addBtn.className='subitem-add-btn';addBtn.textContent='+';addBtn.setAttribute('aria-label','Add sub-item');
+  function commitAdd(){
+    const v=input.value.trim();
+    if(!v)return;
+    addSubItem(page,section,item.id,v);
+    input.value='';
+    input.focus();
+  }
+  addBtn.addEventListener('click',e=>{e.stopPropagation();commitAdd();});
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitAdd();}});
+  input.addEventListener('click',e=>e.stopPropagation());
+  addRow.appendChild(input);addRow.appendChild(addBtn);
+  wrap.appendChild(addRow);
+
+  panelLi.appendChild(wrap);
+}
+
+function toggleSubDone(page,section,itemId,subId){
+  const item=state[page][section].find(i=>i.id===itemId);if(!item)return;
+  const sub=(item.subItems||[]).find(s=>s.id===subId);if(!sub)return;
+  sub.done=!sub.done;
+  saveState(page);
+
+  const key=`${page}-${section}-${itemId}-sub-${subId}`;
+  const panel=document.getElementById(`subpanel-${page}-${section}-${itemId}`);
+  const rowEl=panel?panel.querySelector(`.subitem-row[data-subid="${subId}"]`):null;
+  if(rowEl){
+    const canvas=rowEl.querySelector('.check-btn canvas');
+    const txt=rowEl.querySelector('.subitem-text');
+    if(txt)txt.classList.toggle('strikethrough',sub.done);
+    if(canvas)sub.done?animateTo(key,canvas,false,true,950,null,section):animateTo(key,canvas,true,false,500,null,section);
+  }
+  updateSubCountBadge(page,section,item);
+}
+
+function updateSubCountBadge(page,section,item){
+  const li=document.querySelector(`.todo-item[data-id="${item.id}"][data-page="${page}"][data-section="${section}"]`);
+  if(!li)return;
+  const subToggle=li.querySelector('.subitem-toggle-btn');
+  if(!subToggle)return;
+  let cnt=subToggle.querySelector('.subitem-count-badge');
+  if(item.subItems&&item.subItems.length){
+    if(!cnt){cnt=document.createElement('span');cnt.className='subitem-count-badge';subToggle.appendChild(cnt);}
+    cnt.textContent=`${item.subItems.filter(s=>s.done).length}/${item.subItems.length}`;
+  } else if(cnt){
+    cnt.remove();
+  }
+}
+
+function addSubItem(page,section,itemId,text){
+  const item=state[page][section].find(i=>i.id===itemId);if(!item)return;
+  if(!item.subItems)item.subItems=[];
+  item.subItems.push({id:++idCounter,text,done:false});
+  saveState(page);
+  const panel=document.getElementById(`subpanel-${page}-${section}-${itemId}`);
+  if(panel)renderSubPanel(panel,item,page,section);
+  updateSubCountBadge(page,section,item);
+}
+
+function deleteSubItem(page,section,itemId,subId){
+  const item=state[page][section].find(i=>i.id===itemId);if(!item)return;
+  cancelAnim(`${page}-${section}-${itemId}-sub-${subId}`);
+  item.subItems=(item.subItems||[]).filter(s=>s.id!==subId);
+  saveState(page);
+  const panel=document.getElementById(`subpanel-${page}-${section}-${itemId}`);
+  if(panel)renderSubPanel(panel,item,page,section);
+  updateSubCountBadge(page,section,item);
+}
+
 
 /* ═══════════════════════════════════════════════════════════════
    UNIFIED TOUCH HANDLER — one touch, one resolved mode per item.
@@ -1374,8 +1635,9 @@ function startEdit(page,section,id,li){
 
   input.focus();input.select();
 
-  function commit(){const v=input.value.trim();if(v)item.text=v;render(page,section);saveState(page);}
-  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commit();}if(e.key==='Escape')render(page,section);});
+  function exitEdit(){ input.remove(); timeBtn.remove(); }
+  function commit(){const v=input.value.trim();if(v)item.text=v;exitEdit();render(page,section);saveState(page);}
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commit();}if(e.key==='Escape'){exitEdit();render(page,section);}});
   input.addEventListener('blur',()=>setTimeout(()=>{if(!document.querySelector('.drum-popover.show'))commit();},160));
 }
 
@@ -1388,7 +1650,7 @@ function addTask(page,section){
   const time=addTimeDraft[page][section]||null;
 
   function doAdd(targetSection){
-    state[page][targetSection].push({id:++idCounter,text,done:false,streak:0,time,_justAdded:true});
+    state[page][targetSection].push({id:++idCounter,text,done:false,streak:0,time,subItems:[],_justAdded:true});
     // Reset time draft
     addTimeDraft[page][section]=null;
     const lbl=document.getElementById(`addtime-label-${page}-${section}`);
@@ -1548,7 +1810,7 @@ function saveState(page){
   if(!dateKey)return;
   const key='todo-'+dateKey;
   const snap={sections:{},deadlines:deadlines[page]||{}};
-  SECTIONS.forEach(s=>{snap.sections[s]=state[page][s].map(i=>({text:i.text,done:i.done,streak:i.streak||0,time:i.time||null}));});
+  SECTIONS.forEach(s=>{snap.sections[s]=state[page][s].map(i=>({text:i.text,done:i.done,streak:i.streak||0,time:i.time||null,subItems:(i.subItems||[]).map(si=>({text:si.text,done:si.done}))}));});
   try{localStorage.setItem(key,JSON.stringify(snap));}catch(e){}
   if(currentUser){
     sb.from('daily_lists').upsert(
@@ -1577,7 +1839,7 @@ async function loadState(page,dateKeyOverride){
     try{s=JSON.parse(localStorage.getItem(key));}catch(e){}
   }
   if(!s)return null;
-  SECTIONS.forEach(sec=>{const a=s.sections?s.sections[sec]:s[sec];if(a&&Array.isArray(a))state[page][sec]=a.map(i=>({id:++idCounter,text:i.text,done:!!i.done,streak:i.streak||0,time:i.time||null}));});
+  SECTIONS.forEach(sec=>{const a=s.sections?s.sections[sec]:s[sec];if(a&&Array.isArray(a))state[page][sec]=a.map(i=>({id:++idCounter,text:i.text,done:!!i.done,streak:i.streak||0,time:i.time||null,subItems:(i.subItems||[]).map(si=>({id:++idCounter,text:si.text,done:!!si.done}))}));});
   if(s.deadlines)SECTIONS.forEach(sec=>{if(deadlines[page])deadlines[page][sec]=s.deadlines[sec]||null;});
   return s;
 }
@@ -1589,7 +1851,7 @@ function repeatYesterday(section){
   const arr=state.yesterday[section];
   if(!arr||!arr.length){showToast('No tasks saved from yesterday for this list');return;}
   const ex=new Set(state.today[section].map(i=>i.text.toLowerCase().trim()));let added=0;
-  arr.forEach(({text,done,streak,time})=>{if(!ex.has(text.toLowerCase().trim())){state.today[section].push({id:++idCounter,text,done:false,streak:done?(streak||0)+1:0,time:time||null,_justAdded:true});added++;}});
+  arr.forEach(({text,done,streak,time})=>{if(!ex.has(text.toLowerCase().trim())){state.today[section].push({id:++idCounter,text,done:false,streak:done?(streak||0)+1:0,time:time||null,subItems:[],_justAdded:true});added++;}});
   if(!added)showToast("Yesterday's tasks are already in this list");
   else{render('today',section);saveState('today');showToast(`Added ${added} task${added>1?'s':''} from yesterday`);}
 }
@@ -1603,7 +1865,7 @@ function pullToday(section){
   const ex=new Set(state.tomorrow[section].map(i=>i.text.toLowerCase().trim()));let added=0;
   arr.forEach(({text,time})=>{
     if(!ex.has(text.toLowerCase().trim())){
-      state.tomorrow[section].push({id:++idCounter,text,done:false,streak:0,time:time||null,_justAdded:true});
+      state.tomorrow[section].push({id:++idCounter,text,done:false,streak:0,time:time||null,subItems:[],_justAdded:true});
       added++;
     }
   });
