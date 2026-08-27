@@ -1801,6 +1801,32 @@ document.getElementById('time-conflict-backdrop').addEventListener('click',close
 /* ═══════════════════════════════════════════════════════════════
    PERSIST
 ═══════════════════════════════════════════════════════════════ */
+// Turns a saved snapshot into live state for a page. Reuses the existing
+// item's id when the item at the same position still has the same text —
+// this is what keeps render()'s DOM diffing stable across a reload: if an
+// id changed for no real reason, every item would look "new" and get
+// needlessly rebuilt (a visible flicker) even when nothing actually changed.
+function applySnapshotToState(page,s){
+  SECTIONS.forEach(sec=>{
+    const a=s.sections?s.sections[sec]:s[sec];
+    if(!a||!Array.isArray(a))return;
+    const prevItems=state[page][sec]||[];
+    state[page][sec]=a.map((i,idx)=>{
+      const prev=prevItems[idx];
+      const reuseId=(prev&&prev.text===i.text)?prev.id:++idCounter;
+      return {
+        id:reuseId,text:i.text,done:!!i.done,streak:i.streak||0,time:i.time||null,
+        subItems:(i.subItems||[]).map((si,sidx)=>{
+          const prevSub=prev&&prev.subItems&&prev.subItems[sidx];
+          const reuseSubId=(prevSub&&prevSub.text===si.text)?prevSub.id:++idCounter;
+          return{id:reuseSubId,text:si.text,done:!!si.done};
+        })
+      };
+    });
+  });
+  if(s.deadlines)SECTIONS.forEach(sec=>{if(deadlines[page])deadlines[page][sec]=s.deadlines[sec]||null;});
+}
+
 function dateKeyForPage(page){
   return page==='history' ? historyDate : dateKeyOffset(PAGE_OFFSETS[page]);
 }
@@ -1820,10 +1846,23 @@ function saveState(page){
   }
 }
 
-// Loads a page's data, preferring Supabase (source of truth across devices)
-// when signed in, falling back to the local cache when offline or signed out.
-// Returns the raw snapshot object (or null) so callers like computeStreaks
-// can reuse it without a second fetch.
+// Fast, synchronous, local-only load — no network wait at all. Used for
+// the very first paint on app open so the list never has to sit empty.
+function loadStateLocal(page,dateKeyOverride){
+  const dateKey=dateKeyOverride||dateKeyForPage(page);
+  if(!dateKey)return null;
+  const key='todo-'+dateKey;
+  let s=null;
+  try{s=JSON.parse(localStorage.getItem(key));}catch(e){}
+  if(!s)return null;
+  applySnapshotToState(page,s);
+  return s;
+}
+
+// The real source of truth: fetches from Supabase when signed in, falling
+// back to the local cache when offline or signed out. Returns the raw
+// snapshot (or null) so callers like computeStreaks can reuse it without
+// a second fetch.
 async function loadState(page,dateKeyOverride){
   const dateKey=dateKeyOverride||dateKeyForPage(page);
   if(!dateKey)return null;
@@ -1839,8 +1878,7 @@ async function loadState(page,dateKeyOverride){
     try{s=JSON.parse(localStorage.getItem(key));}catch(e){}
   }
   if(!s)return null;
-  SECTIONS.forEach(sec=>{const a=s.sections?s.sections[sec]:s[sec];if(a&&Array.isArray(a))state[page][sec]=a.map(i=>({id:++idCounter,text:i.text,done:!!i.done,streak:i.streak||0,time:i.time||null,subItems:(i.subItems||[]).map(si=>({id:++idCounter,text:si.text,done:!!si.done}))}));});
-  if(s.deadlines)SECTIONS.forEach(sec=>{if(deadlines[page])deadlines[page][sec]=s.deadlines[sec]||null;});
+  applySnapshotToState(page,s);
   return s;
 }
 
@@ -2048,13 +2086,24 @@ async function onAuthReady(){
   checkNewDay();
   document.querySelectorAll('#drum-backdrop').forEach(el=>el.remove());
 
-  for(const p of ALL_PAGES) await loadState(p);
-  const yesterdaySnap=await loadState('yesterday'); // reuse for streaks, avoids a second fetch pattern
-  computeStreaks(yesterdaySnap);
-
-  ALL_PAGES.forEach(page=>{
-    SECTIONS.forEach(section=>render(page,section));
+  // Instant paint: whatever's already cached on this device, no network
+  // wait. Keeps the list from ever sitting empty for a few seconds.
+  let yesterdaySnapLocal=null;
+  ALL_PAGES.forEach(p=>{
+    const snap=loadStateLocal(p);
+    if(p==='yesterday')yesterdaySnapLocal=snap;
   });
+  computeStreaks(yesterdaySnapLocal);
+  ALL_PAGES.forEach(page=>{SECTIONS.forEach(section=>render(page,section));});
+
+  // Background reconcile: fetch the real source of truth from Supabase,
+  // all three pages in parallel rather than one at a time. applySnapshotToState
+  // reuses ids where content matches, so render()'s diffing means this only
+  // touches whatever actually changed — no flicker for anything that didn't.
+  const results=await Promise.all(ALL_PAGES.map(p=>loadState(p)));
+  const yesterdaySnap=results[ALL_PAGES.indexOf('yesterday')];
+  computeStreaks(yesterdaySnap);
+  ALL_PAGES.forEach(page=>{SECTIONS.forEach(section=>render(page,section));});
 }
 
 /* ═══════════════════════════════════════════════════════════════
