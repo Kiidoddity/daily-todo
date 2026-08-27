@@ -390,12 +390,18 @@ body.dark .repeat-btn:hover { color:#B89CF0; border-color:#8134AF; }
 
 /* HISTORY OVERLAY */
 .history-overlay {
-  position:fixed; inset:0; z-index:6000; background:var(--bg); transform:translateY(100%);
+  position:fixed; inset:0; z-index:6000; background:var(--bg);
+  transform:translateY(100%) translateZ(0);
   transition:transform .35s cubic-bezier(.25,.46,.45,.94); overflow-y:auto; -webkit-overflow-scrolling:touch;
 }
-.history-overlay.show { transform:translateY(0); }
-#page-history { padding:32px 20px 80px; min-height:100%; width:100%; height:auto; overflow:visible; }
-.history-topbar { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.history-overlay.show { transform:translateY(0) translateZ(0); }
+#page-history { padding:0 20px 80px; min-height:100%; width:100%; height:auto; overflow:visible; }
+.history-topbar {
+  display:flex; align-items:center; gap:10px;
+  position:sticky; top:0; z-index:10; background:var(--bg);
+  padding:max(20px, env(safe-area-inset-top) + 12px) 0 12px;
+  margin-bottom:8px;
+}
 .history-back-btn {
   display:flex; align-items:center; gap:4px; background:var(--paper-dark); border:1.5px solid var(--card-border);
   color:var(--ink-light); border-radius:999px; padding:7px 15px 7px 12px; font-family:'Plus Jakarta Sans',-apple-system,sans-serif;
@@ -2192,11 +2198,19 @@ async function openHistory(dateKey){
     dateKey===todayKey ? 'Today' : fmtHistoryDate(dateKey).split(',')[0];
 
   document.getElementById('pages-container').style.display='none';
-  document.getElementById('history-overlay').classList.add('show');
+  const overlay=document.getElementById('history-overlay');
+  overlay.scrollTop=0; // always start a freshly-opened date at the top, not wherever a previous session left off
+  overlay.classList.add('show');
 }
 async function closeHistory(){
   document.getElementById('history-overlay').classList.remove('show');
   document.getElementById('pages-container').style.display='';
+  // Defensive: reset the now-visible page's own scroll position too, in
+  // case anything while in history (e.g. a focused input) left the
+  // viewport in a bad state — guarantees the header buttons are reachable.
+  const activePage=ALL_PAGES[currentPage];
+  const activePageEl=activePage?document.getElementById(`page-${activePage}`):null;
+  if(activePageEl)activePageEl.scrollTop=0;
   // If the day just viewed/edited in history is also one of the live
   // carousel pages (yesterday/today/tomorrow), refresh it from the
   // database so any edits made here show up immediately there too —
